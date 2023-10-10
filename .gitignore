@@ -1,3 +1,4 @@
 *.eeg
 *.vhdr
 *.vmrk
+*.mat

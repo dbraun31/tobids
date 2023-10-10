@@ -8,6 +8,16 @@
         optional fields i can't find i can add in as blanks
         required fields i cant find can be added with '???'
 
+    okay yea, their main documentation page has all the info needed to get
+    this organized
+    still some open questions about how best to query everything from the
+    mne api
+    and i should prob go through the behavioral data to see what i can get
+    from that (eg, demographics, task name)
+
+    but otherwise we're ready to start thinking about a processing flow
+    here
+
 2023-10-06
     reading in data to object called eeg
     lots of good stuff in 

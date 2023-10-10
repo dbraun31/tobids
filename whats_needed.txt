@@ -138,6 +138,17 @@ participants.json
 
 --- end participants
 
+okay i thought we had to deal with multiple sessions, but, after reading
+their definitions
+(https://bids-specification.readthedocs.io/en/stable/02-common-principles.html#units),
+I think we're actually dealing with multiple *runs*
+
+file naming convention:
+    sub-<label>_task-<label>_run-<label>_<label>.<extension>
+    
+
+        
+
 something about 'samples' files, ignoring for now
 need to document sessions if subjects are run across multiple days (i
 think)
