@@ -1,0 +1,33 @@
+2023-10-06
+    reading in data to object called eeg
+    lots of good stuff in 
+        eeg.info
+        eeg.info['chs']
+    raw data i think is
+        eeg.get_data()
+
+    mne has functions to convert brainvision to bids
+        https://mne.tools/mne-bids/dev/auto_examples/convert_eeg_to_bids.html
+
+        want to check carefully to see whether we'll need to customize
+        anything / want more control
+
+        i kind of like the idea of just doing it custom
+
+    not sure whether electrode coordinates are represented anywhere
+
+    i don't totally understand bids' distinction between electrodes and
+    channels
+        maybe channels are the voltage of electrodes against reference?
+
+    i think you can get electrode positions with:
+        montage = eeg.get_montage()
+        montage.get_positions()
+        gives you a dict with coordinates for each electrode
+        need to confirm that's actually coming from the data and not some
+        estimate
+
+    need to figure out what's ground and reference
+        ooohh they wouldn't show up in channels
+        only electrodes
+        and in the header file i see gnd and ref at the bottom
