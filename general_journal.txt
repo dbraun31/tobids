@@ -1,3 +1,13 @@
+2023-10-10
+    this site is very helpful
+        https://bids-standard.github.io/bids-starter-kit/folders_and_files/files.html
+    also very helpful, lists which fields are required
+        https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/03-electroencephalography.html
+
+    let's just go through and get as much of the info as i can
+        optional fields i can't find i can add in as blanks
+        required fields i cant find can be added with '???'
+
 2023-10-06
     reading in data to object called eeg
     lots of good stuff in 
