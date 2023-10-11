@@ -1,3 +1,10 @@
+2023-10-11
+    behavioral data appears to truly just be responses to probes
+        actual rating
+        RT
+        onset / offset
+    so i'll proceed without demographics for now..
+
 2023-10-10
     this site is very helpful
         https://bids-standard.github.io/bids-starter-kit/folders_and_files/files.html

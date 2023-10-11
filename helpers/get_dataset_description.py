@@ -1,4 +1,9 @@
 # taken from: https://github.com/bids-standard/bids-starter-kit/blob/main/pythonCode/createBIDS_dataset_description_json.py
+# maybe the best way to do this is to code it as a function
+# the function sources a script where each of these gets saved as a
+# different var by a user
+# then the function just puts it all in an ordered dict and returns
+# function gets called in the pipeline
 
 import json
 from collections import OrderedDict
