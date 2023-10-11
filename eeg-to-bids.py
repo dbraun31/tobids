@@ -27,6 +27,26 @@ def initialize_readme(dest_dir):
         ff.write(readme)
     ff.close()
 
+def create_readme(dest_dir):
+    '''
+    Description pending.
+    '''
+    response = ''
+    while response not in ['y', 'n']:
+        response = input('\nDo you have an existing readme file? [y/n] ')
+    # If a readme exists
+    # Ask for the path and move to destination
+    if response == 'y':
+        readme_dir = input('\nPlease provide the path to the readme file: ')
+        if not os.path.exists(readme_dir):
+            print("Readme file doesn't exist. Initializing a blank one.")
+            initialize_readme(dest_dir)
+        else:
+            os.rename(readme_dir, dest_dir + '/README.md')
+
+    # If no readme already exists, create one
+    else:
+        initialize_readme(dest_dir)
 
 
 if __name__ == '__main__':
@@ -72,19 +92,4 @@ if __name__ == '__main__':
         json.dump(dataset_description, ff, sort_keys=False, indent=4)
 
     # Initialize a README
-    response = ''
-    while response not in ['y', 'n']:
-        response = input('\nDo you have an existing readme file? [y/n] ')
-    # If a readme exists
-    # Ask for the path and move to destination
-    if response == 'y':
-        readme_dir = input('\nPlease provide the path to the readme file: ')
-        if not os.path.exists(readme_dir):
-            print("Readme file doesn't exist. Initializing a blank one.")
-            initialize_readme(dest_dir)
-        else:
-            os.rename(readme_dir, dest_dir + '/README.md')
-
-    # If no readme already exists, create one
-    else:
-        initialize_readme(dest_dir)
+    create_readme(dest_dir)
