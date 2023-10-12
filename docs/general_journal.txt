@@ -1,9 +1,21 @@
+2023-10-12
+    let's see if i can get to a minimum viable product today
+    i will need to ensure that this script will run correctly if called
+    from anywhere...
+    
+    huge issues trying to get this pyedflib to correctly do a numpy import
+    doing a forced reinstall of numpy seemed to work
+        conda install --force-reinstall numpy
+
 2023-10-11
     behavioral data appears to truly just be responses to probes
         actual rating
         RT
         onset / offset
     so i'll proceed without demographics for now..
+
+    good progress today
+    left off after initializing a readme
 
 2023-10-10
     this site is very helpful
