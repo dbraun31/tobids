@@ -4,7 +4,7 @@ import json
 # Import custom modules
 from helpers.validations import *
 from get_dataset_description import get_dataset_description
-from helpers.readme import *
+from helpers.make_readme import *
 from helpers.create_subject_dirs import *
 
 '''

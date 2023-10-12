@@ -4,6 +4,10 @@ import os
 # see here for example: https://github.com/holgern/pyedflib
 from pyedflib import highlevel
 
+'''
+Need to comment throughout
+'''
+
 
 def determine_runs(origin_dir, subject):
     '''
@@ -23,6 +27,12 @@ def determine_runs(origin_dir, subject):
 
 
 class CreateSubjectDirs:
+    '''
+    dont know if it makes sense to have this be an all-purpose file maker
+    or not
+    i think it would be fine
+    all these attributes are what i'd need to make them anyway
+    '''
 
     def __init__(self, file_path, dest_dir, subject, task, run):
         self.file_path = file_path
@@ -46,6 +56,8 @@ class CreateSubjectDirs:
         highlevel.write_edf(self.subject_path + '/' + self.filename + '_eeg.edf', 
                             self.raw.get_data(), 
                             signal_headers)
+
+   # other file making functions go here... 
 
     def _load_raw_data(self):
         self._create_temp_vhdr()
