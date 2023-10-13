@@ -3,9 +3,9 @@ from collections import OrderedDict
 import json
 # Import custom modules
 from helpers.validations import *
-from get_dataset_description import get_dataset_description
+from templates import *
 from helpers.make_readme import *
-from helpers.create_subject_dirs import *
+from helpers.create_eeg_dirs import *
 
 '''
 This script should be executed from the command line with Python.
@@ -18,6 +18,8 @@ dataset_description.json) with suffix _BIDS
 Right now (2023-10-12), the script assumes the first level of origin_dir
 contains one sub-directory per subject (and nothing else). We'll likely
 want to revise this to make it more robust.
+
+(I need to really think about how to implement templates)
 
 FILES TO UPDATE MANUALLY:
     *
@@ -63,6 +65,7 @@ if __name__ == '__main__':
         os.mkdir(dest_dir)
     
     # Compile dataset description
+    # ** Could expand this to a class to handle all Level 1 files
     with open(dest_dir + '/dataset_description.json', 'w') as ff:
         json.dump(dataset_description, ff, sort_keys=False, indent=4)
 
@@ -80,7 +83,7 @@ if __name__ == '__main__':
         runs = determine_runs(origin_dir, subject)
         # Make subject-specific BIDs files for each run
         for run, file_path in enumerate(runs):
-            csd = CreateSubjectDirs(file_path=file_path,
+            csd = CreateEEGDirs(file_path=file_path,
                                     dest_dir=dest_dir,
                                     subject=subject,
                                     task=task_name,

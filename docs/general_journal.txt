@@ -1,3 +1,19 @@
+2023-10-13
+    let's push this thing to finish today..
+
+    seeing in docs, .edf actually isn't required. It's recommended
+        they accept the brain vision triplet
+        might want to program in the conversion as optional
+
+    need to find some way to make the templates editable by users...
+
+    got super complicated trying to appropriately extract bids-formatted
+    information from the mne object
+        digging deep into the mne_bids library has been really helpful
+    just gotta have it out with the coordsystem.json and i think it'll all
+    be pretty much there
+
+
 2023-10-12
     let's see if i can get to a minimum viable product today
     i will need to ensure that this script will run correctly if called
@@ -6,6 +22,9 @@
     huge issues trying to get this pyedflib to correctly do a numpy import
     doing a forced reinstall of numpy seemed to work
         conda install --force-reinstall numpy
+
+    huge work
+    have a successful write_edf() workflow.. i think
 
 2023-10-11
     behavioral data appears to truly just be responses to probes

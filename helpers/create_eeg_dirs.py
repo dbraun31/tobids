@@ -26,12 +26,13 @@ def determine_runs(origin_dir, subject):
     return runs
 
 
-class CreateSubjectDirs:
+class CreateEEGDirs:
     '''
-    dont know if it makes sense to have this be an all-purpose file maker
-    or not
-    i think it would be fine
-    all these attributes are what i'd need to make them anyway
+    ** Need to comment throughout
+    ** Build command line argument to make converting data optional
+
+    Think again about the scope of this...
+    might leave it only as a class for importing / writing to edf
     '''
 
     def __init__(self, file_path, dest_dir, subject, task, run):
@@ -51,7 +52,8 @@ class CreateSubjectDirs:
     def write_edf(self):
         channel_names = self.raw.info['ch_names']
         sf = self.raw.info['sfreq']
-        signal_headers = highlevel.make_signal_headers(channel_names, sample_frequency=sf)
+        signal_headers = highlevel.make_signal_headers(channel_names, 
+                                                       sample_frequency=sf)
         self._make_subject_dir()
         highlevel.write_edf(self.subject_path + '/' + self.filename + '_eeg.edf', 
                             self.raw.get_data(), 
