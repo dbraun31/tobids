@@ -53,10 +53,13 @@ def get_eeg_json(task_name, raw):
         ("TriggerChannelCount",''),
         ("EEGPlacementScheme",''),
         ("EEGGround",""),
-        ("HardwareFilters",{}),
+        ("HardwareFilters",''),
         ("RecordingDuration",''),
         ("RecordingType","")
          ])
+
+
+    return _keep_non_empty(data)
 
 def get_channels_tsv(raw):
     '''
@@ -128,31 +131,19 @@ def get_channels_tsv(raw):
     data['status'] = status
     data['status_description'] = ''
 
-    # Keep only non-empty entries
-    data = OrderedDict((key, value) for key, value in data.items() if len(value) > 1)
-
-    return pd.DataFrame(data)
+    return pd.DataFrame(_keep_non_empty(data))
 
 
-def get_electrodes_tsv(raw_data):
+def get_electrodes_tsv(raw):
     '''
     This function compiles the *_electrodes.tsv file for each subject & run
     Supplying this file is optional
 
-    This one is a doozy
-    See mne.channels.montage.read_custom_montage()
-        feed this the .bvef in the onedrive
-    See also mne.dig._write_dig_bids()
-
-    Oh but wait
     See mne_bids.dig._write_electrodes_tsv()
     They're just pulling from raw.info['chs'][:]['loc'][:3]
-
-    ** Come back and comment each with descriptions from docs:
-    https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/03-electroencephalography.html
     '''
-
-    data = {}
+    
+    data = OrderedDict()
 
     # Get coordinates
     coords = [x['loc'][:3] for x in raw.info['chs']]
@@ -168,10 +159,19 @@ def get_electrodes_tsv(raw_data):
 
     data['type'] = ''
     data['material'] = ''
-    data['impedance'] = [raw.impedances[x]['imp'] for x in raw.impedances]
 
-    ## Keep only non-empty entries
-    data = OrderedDict((key, value) for key, value in data.items() if len(value) > 1)
+    # Sync storing of impedances with order of channel names
+    impedances = []
+    for channel in raw.ch_names:
+        if channel in raw.impedances:
+            impedances.append(raw.impedances[channel]['imp'])
+        else:
+            impedances.append('n/a')
+    data['impedances'] = impedances
 
-    return pd.DataFrame(data)
+    return pd.DataFrame(_keep_non_empty(data))
 
+def _keep_non_empty(data):
+    # Keep only non-empty entries
+    data = OrderedDict((key, value) for key, value in data.items() if value != '')
+    return data

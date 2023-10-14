@@ -1,12 +1,14 @@
 import sys
 from collections import OrderedDict
 import json
+from mne_bids.path import BIDSPath
 # Import custom modules
 from helpers.validations import *
 from templates.modality_agnostic import *
 from templates.modality_specific import *
 from helpers.make_readme import *
 from helpers.create_eeg_dirs import *
+from templates.mne_bids_mods import _write_dig_bids
 
 '''
 This script should be executed from the command line with Python.
@@ -97,6 +99,12 @@ if __name__ == '__main__':
                                                task_name,
                                                run)
 
+            # Make write directory string (no filename)
+            write_dir = '/'.join([dest_dir, 
+                                  'sub-{}'.format(subject),
+                                  'eeg']) + '/'
+
+
             # Initialize EEG directory for a subject
             init_eeg_dir(subject, dest_dir)
 
@@ -111,8 +119,45 @@ if __name__ == '__main__':
                            subject,
                            make_edf=make_edf)
 
-            # Make *_eeg.json and write
-            #eeg_json = get_eeg_json(task_name, raw)
-            #write_file(data=eeg_json, 
-            #           extension='.json',
-                       ## FILL IN
+            # Compile and write *_eeg.json
+            eeg_json = get_eeg_json(task_name, raw)
+            write_file(eeg_json, write_dir, bids_filestem, 'eeg', '.json')
+
+            # Unsure about *_events.tsv
+
+            # Compile and write *_channels.tsv
+            channels_tsv = get_channels_tsv(raw) 
+            write_file(channels_tsv, 
+                       write_dir, 
+                       bids_filestem, 
+                       'channels',
+                       '.tsv')
+
+            '''
+            # Compile and write *_electrodes.tsv
+            electrodes_tsv = get_electrodes_tsv(raw)
+            write_file(electrodes_tsv,
+                       write_dir,
+                       bids_filestem,
+                       'electrodes',
+                       '.tsv')
+
+            THE BELOW FUNCTION can't recover the coordinate system used
+            it failed to be inferred from the montage
+            it can be supplied to BIDSPath.space
+
+
+            # Compile and write *_coordsystem.json
+            bids_path = BIDSPath(subject=subject,
+                                 task=task_name,
+                                 run=run,
+                                 suffix='coordsystem',
+                                 extension='.json',
+                                 datatype='eeg',
+                                 root=dest_dir)
+
+            _write_dig_bids(bids_path,
+                            raw,
+                            montage=montage,
+                            overwrite=True)
+            '''

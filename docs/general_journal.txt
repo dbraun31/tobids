@@ -1,3 +1,12 @@
+2023-10-14
+    pretty much minimally sufficient product minus general command line
+    functionality
+
+    no luck on *_coordsystem.json
+    it couldn't recover the coordsystem from the montage
+    seems like I could supply it manually
+    need to do more homework on what the heck these coordsystems are
+
 2023-10-13
     let's push this thing to finish today..
 

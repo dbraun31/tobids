@@ -1,4 +1,12 @@
 # Taken from mne_bids.dig
+import warnings
+from mne.io.constants import FIFF
+from mne_bids.config import MNE_STR_TO_FRAME
+from mne_bids.config import MNE_FRAME_TO_STR
+from mne_bids.config import MNE_TO_BIDS_FRAMES
+from mne_bids.config import BIDS_COORD_FRAME_DESCRIPTIONS
+from mne_bids.path import BIDSPath
+from mne_bids.utils import warn
 
 def _write_dig_bids(bids_path, raw, montage=None, acpc_aligned=False, overwrite=False):
     """Write BIDS formatted DigMontage from Raw instance.
@@ -127,8 +135,11 @@ def _write_dig_bids(bids_path, raw, montage=None, acpc_aligned=False, overwrite=
     )
 
     # Now write the data to the elec coords and the coordsystem
-    _channels_fun(raw, channels_path, bids_path.datatype, overwrite)
-    _write_coordsystem_json(
+
+    # (Dave) dropping the below line bc I have my own function for this
+    #_channels_fun(raw, channels_path, bids_path.datatype, overwrite)
+
+    coordsystem = _write_coordsystem_json(
         raw=raw,
         unit=unit,
         hpi_coord_system="n/a",
@@ -137,6 +148,8 @@ def _write_dig_bids(bids_path, raw, montage=None, acpc_aligned=False, overwrite=
         datatype=bids_path.datatype,
         overwrite=overwrite,
     )
+
+    return coordsystem
 
 
 def _write_coordsystem_json(
@@ -150,7 +163,7 @@ def _write_coordsystem_json(
     overwrite=False,
 ):
     """Create a coordsystem.json file and save it.
-	** I'm (dave) modifying it to just return the json instead of writing
+    ** I'm (dave) modifying it to just return the json instead of writing
     it directly
 
     Parameters
@@ -250,6 +263,6 @@ def _write_coordsystem_json(
                 f"You must differentiate this coordsystem.json file "
                 f'from the existing one, or set "overwrite" to True.'
             )
-	return fid_json
+    return fid_json
 
 
