@@ -6,7 +6,20 @@ from mne_bids.utils import _get_ch_type_mapping
 from mne.io.pick import channel_type
 from mne_bids.pick import coil_type
 
-def get_eeg_json(task_name, raw_data):
+'''
+WHAT ARE THESE FUNCTIONS DOING?
+They take in the necessary info. They return either a dict to be written as
+json or a pandas df to be written as tsv. 
+I think anything unknown from the data that I need from users, just ask the
+user.
+Don't worry about them having to manually edit these files, too much of a
+pain.
+I'll have a different function later in the pipeline that worries about
+writing all these objects to file.
+'''
+
+
+def get_eeg_json(task_name, raw):
     '''
     This function compiles the *_eeg.json file for each subject and for
     each run
@@ -15,35 +28,35 @@ def get_eeg_json(task_name, raw_data):
     https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/03-electroencephalography.html
     '''
     raw_dict = dict(raw.info)
-    data = {
+    data = OrderedDict([
         # The below fields are required
-        "TaskName":task_name,
+        ("TaskName",task_name),
         # Taken from the BrainVision docs we were sent specific to our
         # setup
-        "EEGReference":"FCz",
-        "SamplingFrequency":raw.info['sfreq'], 
-        "PowerLineFrequency": raw_dict.get('line_freq', 'n/a'),
-        "SoftwareFilters": 'n/a',
+        ("EEGReference","FCz"),
+        ("SamplingFrequency",raw.info['sfreq']), 
+        ("PowerLineFrequency", raw_dict.get('line_freq', 'n/a')),
+        ("SoftwareFilters", 'n/a'),
         # The below fields are recommended
-        "TaskDescription":"",
-        "Instructions":"",
-        "InstitutionName":"",
-        "Manufacturer":"Brain Products",
-        "ManufacturersModelName":"",
-        "CapManufacturer":"",
-        "CapManufacturersModelName":"",
-        "EEGChannelCount":'',
-        "EOGChannelCount":'',
-        "ECGChannelCount":'',
-        "EMGChannelCount":'',
-        "MiscChannelCount":'',
-        "TriggerChannelCount":'',
-        "EEGPlacementScheme":'',
-        "EEGGround":"",
-        "HardwareFilters":{},
-        "RecordingDuration":'',
-        "RecordingType":""
-    }
+        ("TaskDescription",""),
+        ("Instructions",""),
+        ("InstitutionName",""),
+        ("Manufacturer","Brain Products"),
+        ("ManufacturersModelName",""),
+        ("CapManufacturer",""),
+        ("CapManufacturersModelName",""),
+        ("EEGChannelCount",''),
+        ("EOGChannelCount",''),
+        ("ECGChannelCount",''),
+        ("EMGChannelCount",''),
+        ("MiscChannelCount",''),
+        ("TriggerChannelCount",''),
+        ("EEGPlacementScheme",''),
+        ("EEGGround",""),
+        ("HardwareFilters",{}),
+        ("RecordingDuration",''),
+        ("RecordingType","")
+         ])
 
 def get_channels_tsv(raw):
     '''
@@ -161,48 +174,4 @@ def get_electrodes_tsv(raw_data):
     data = OrderedDict((key, value) for key, value in data.items() if len(value) > 1)
 
     return pd.DataFrame(data)
-
-def get_coordsystem_json(raw_data):
-    '''
-    A *_coordsystem.json file is used to specify the fiducials, the
-    location of anatomical landmarks, and the coordinate system and units
-    in which the position of electrodes and landmarks is expressed. The
-    *_coordsystem.json is REQUIRED if the optional *_electrodes.tsv is
-    specified. If a corresponding anatomical MRI is available, the
-    locations of landmarks and fiducials according to that scan should also
-    be stored in the *_T1w.json file which goes alongside the MRI data.
-
-    ** Come back and comment each with descriptions from docs:
-    https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/03-electroencephalography.html
-    ** I'm also omitting some of the recommended fields for now to save
-    time
-
-    See mne_bids.dig._write_coordsystem_json()
-    I think this one will be complicated...
-
-
-    '''
-
-    data = OrderedDict()
-
-    ## The following fields are required: ##
-    '''
-    EEG Specific Coordinate Systems
-
-    Restricted keywords for the <CoordSysType>CoordinateSystem field in the coordsystem.json file for EEG datasets:
-
-        CapTrak: RAS orientation and the origin approximately between LPA and RPA
-        EEGLAB: ALS orientation and the origin exactly between LPA and RPA. For more information, see the EEGLAB wiki page.
-        EEGLAB-HJ: ALS orientation and the origin exactly between LHJ and RHJ. For more information, see the EEGLAB wiki page.
-        Any keyword from the list of Standard template identifiers: RAS orientation and the origin at the center of the gradient coil for template NifTI images
-    '''
-    data['EEGCoordinateSystem'] = ''
-
-    # Must be one of: "m", "mm", "cm", "n/a"
-    data['EEGCoordinateUnits'] = ''
-
-    # This field is recommended but required if EEGCoordinateSystem is
-    # 'Other'
-    data['EEGCoordinateSystemDescription'] = ''
-
 

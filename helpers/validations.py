@@ -96,7 +96,7 @@ class ValidateBasics:
 
         print('\nThe task will be called {}'.format(task_name.upper()))
 
-        return task_name
+        return task_name.upper()
 
     def generate_dataset_description(self):
         # see ./helpers/get_dataset_description
