@@ -86,8 +86,12 @@ if __name__ == '__main__':
     # Load montage
     montage = mne.channels.read_custom_montage(fname='./BC-MR3-32.bvef')
 
+    # Grab all first-level dirs in origin dir
+    all_dirs = os.listdir(origin_dir)
+    # Keep only elements of the form '\d\d\d'
+    subjects = [x for x in all_dirs if x.isdigit() and len(x)==3]
+
     # Iterate over subjects
-    subjects = os.listdir(origin_dir)
     for subject in subjects:
         print('\nProcessing Subject {}'.format(subject))
         # Grab full file paths by run (without extensions)
@@ -114,7 +118,7 @@ if __name__ == '__main__':
 
             # Write / copy raw data to BIDs dir
             make_bids_data(dest_dir,
-                           bids_filestem, # STILL NEED
+                           bids_filestem, 
                            raw, 
                            base_filename, 
                            subject,
