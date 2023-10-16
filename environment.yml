@@ -20,6 +20,7 @@ dependencies:
   - babel=2.11.0=py39h06a4308_0
   - backcall=0.2.0=pyhd3eb1b0_0
   - beautifulsoup4=4.12.2=py39h06a4308_0
+  - bids-validator=1.13.1=pyhd8ed1ab_0
   - blas=1.0=mkl
   - bleach=4.1.0=pyhd3eb1b0_0
   - blosc=1.21.3=h6a678d5_0
@@ -29,9 +30,9 @@ dependencies:
   - brotlipy=0.7.0=py39h27cfd23_1003
   - bzip2=1.0.8=h7b6447c_0
   - c-ares=1.19.1=h5eee18b_0
-  - ca-certificates=2023.08.22=h06a4308_0
+  - ca-certificates=2023.7.22=hbcca054_0
   - cached-property=1.5.2=py_0
-  - certifi=2023.7.22=py39h06a4308_0
+  - certifi=2023.7.22=pyhd8ed1ab_0
   - cffi=1.15.1=py39h5eee18b_3
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
   - click=8.0.4=py39h06a4308_0
@@ -191,6 +192,7 @@ dependencies:
   - mkl_random=1.2.4=py39hdb19cb5_0
   - mne=1.5.1=ha770c72_0
   - mne-base=1.5.1=pyh57928b3_0
+  - mne-bids=0.13=pyhd8ed1ab_0
   - mne-qt-browser=0.6.0=pyha770c72_0
   - multidict=6.0.2=py39h5eee18b_0
   - munkres=1.1.4=py_0
@@ -239,6 +241,7 @@ dependencies:
   - ptyprocess=0.7.0=pyhd3eb1b0_2
   - pugixml=1.11.4=h295c915_1
   - pure_eval=0.2.2=pyhd3eb1b0_0
+  - pybv=0.7.5=pyhd8ed1ab_0
   - pycodestyle=2.10.0=py39h06a4308_0
   - pycparser=2.21=pyhd3eb1b0_0
   - pyedflib=0.1.32=py39hf0d0a58_0
@@ -353,4 +356,4 @@ dependencies:
   - zipp=3.11.0=py39h06a4308_0
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hc292b87_0
-prefix: /home/dave/miniconda3/envs/eeg
+prefix: /home/dave/anaconda3/envs/eeg

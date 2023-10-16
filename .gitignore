@@ -4,3 +4,5 @@
 *.mat
 sample_data/
 *.edf
+literature/
+docs/

@@ -1,3 +1,4 @@
+from bids_validator import BIDSValidator
 from glob import glob
 import os
 import re
@@ -102,5 +103,28 @@ class ValidateBasics:
         # see ./helpers/get_dataset_description
         return ''
 
+
+def final_validation(dest_dir):
+    '''
+    This function returns a score of the percentage of files in the final
+    directory that are BIDS compatible.
+    '''
+    file_paths = []
+
+    for root, dirs, files in os.walk(dest_dir):
+        root = '/'.join(root.split('/')[1:])
+        for file in files:
+            file_paths.append('/' + os.path.join(root, file))
+
+    validator = BIDSValidator()
+
+    result = 0
+
+    for path in file_paths:
+        if validator.is_bids(path):
+            result += 1
+
+    score = round((result / len(file_paths))*100, 2)
+    print("\nFinal validation of output directory.\n{}% of files in the output directory are BIDs compatible.".format(score))
 
 

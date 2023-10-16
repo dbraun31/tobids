@@ -4,11 +4,12 @@ import json
 from mne_bids.path import BIDSPath
 # Import custom modules
 from helpers.validations import *
-from templates.modality_agnostic import *
-from templates.modality_specific import *
+from helpers.modality_agnostic import *
+from helpers.modality_specific import *
 from helpers.make_readme import *
 from helpers.create_eeg_dirs import *
-from templates.mne_bids_mods import _write_dig_bids
+from helpers.mne_bids_mods import _write_dig_bids
+
 
 '''
 This script should be executed from the command line with Python.
@@ -161,3 +162,6 @@ if __name__ == '__main__':
                             montage=montage,
                             overwrite=True)
             '''
+    
+    # Validate final directory
+    final_validation(dest_dir)
