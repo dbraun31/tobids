@@ -30,7 +30,7 @@ dependencies:
   - brotlipy=0.7.0=py39h27cfd23_1003
   - bzip2=1.0.8=h7b6447c_0
   - c-ares=1.19.1=h5eee18b_0
-  - ca-certificates=2023.7.22=hbcca054_0
+  - ca-certificates=2023.08.22=h06a4308_0
   - cached-property=1.5.2=py_0
   - certifi=2023.7.22=pyhd8ed1ab_0
   - cffi=1.15.1=py39h5eee18b_3

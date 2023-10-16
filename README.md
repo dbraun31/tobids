@@ -2,7 +2,7 @@
 
 ToBids is a general Python tool developed for the [Dynamic Mind and Brain Lab](https://sites.google.com/site/aaronkucyi)
 to convert raw neuro data to [BIDS](https://bids.neuroimaging.io/) format.
-This tool provides an easy command-line interface for easy data
+This tool provides a command-line interface for easy data
 conversion.
 
 All questions can be directed to Dave Braun: dave.braun@drexel.edu
@@ -11,7 +11,7 @@ All questions can be directed to Dave Braun: dave.braun@drexel.edu
 
 ### Requirements
 
-Prior to setting up ToBids, you'll need the following command-line tools
+Prior to setting up ToBids, you'll need the following programs
 installed:
 
 * `pip`
@@ -44,6 +44,10 @@ $ cd tobids
 $ conda env create -f environment.yml
 $ conda activate eeg
 ```
+
+*Note that in order for the tool to run, you'll need to have the `eeg`
+environment activated. See
+[here](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment) for more about managing conda enviornments.*
 
 #### Using Pip
 ```bash
@@ -107,6 +111,9 @@ tobids path/to/raw/data/dir <optional/path/to/bids/dest/dir>
 
 `tobids` requires that the path to the original data is specified. You can optionally supply the path to where you would like the output data to be created. If you don't supply a path for output data, `tobids` will create one in the directory in which the program was called using the name you provide for the name of the data.
 
+After the BIDS directory is completed and populated with all necessary
+files, `tobids` will run the `bids-validator` tool created by the [BIDS team](https://github.com/bids-standard/bids-validator) to ensure all files are BIDS compatible.
+
 
 ## Release notes
 
@@ -121,4 +128,6 @@ tobids path/to/raw/data/dir <optional/path/to/bids/dest/dir>
 * More sophisticated command-line argument parsing.
 * Generalize to other data types.
 * Figure out the coordinate system and how to produce `*_coordsystem.json`.
+* How to reference the `*.bvef` file for making a montage. Might need to
+    have user point to it.
 * Probably lots of other things...

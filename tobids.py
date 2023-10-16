@@ -20,15 +20,7 @@ A destination directory can optionally be provided
 Otherwise, destination directory will be the dataset name (set in the
 dataset_description.json) with suffix _BIDS
 
-Right now (2023-10-12), the script assumes the first level of origin_dir
-contains one sub-directory per subject (and nothing else). We'll likely
-want to revise this to make it more robust.
 
-(I need to really think about how to implement templates)
-I think just do it automated as much as possible
-
-FILES TO UPDATE MANUALLY:
-    *
 '''
 
 
