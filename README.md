@@ -17,7 +17,6 @@ installed:
 * `pip`
 * `git` - [install instructions](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * `conda` (optional) - [install instructions](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
-* `python3`
 
 You can verify whether each of these is already installed on your system by
 opening a terminal and typing the name of the program followed by

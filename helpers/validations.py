@@ -1,3 +1,5 @@
+# Dave Braun (2023)
+
 from bids_validator import BIDSValidator
 from glob import glob
 import os
