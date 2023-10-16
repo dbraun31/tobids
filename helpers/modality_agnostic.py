@@ -8,7 +8,7 @@ def get_dataset_description():
     # General fields, shared with MRI BIDS and MEG BIDS:
     # Required fields:
     # name of the dataset
-    data["Name"] = "Test data"
+    data["Name"] = input('\nWhat would you like to name the dataset? ')
 
     # The version of the BIDS standard that was used
     data["BIDSVersion"] = "1.0.2"

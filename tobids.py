@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 from collections import OrderedDict
 import json
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     # participants.tsv, participants.json, task-TASKNAME_events.json
 
     # Load montage
-    montage = mne.channels.read_custom_montage(fname='./BC-MR3-32.bvef')
+    #montage = mne.channels.read_custom_montage(fname='./BC-MR3-32.bvef')
 
     # Grab all first-level dirs in origin dir
     all_dirs = os.listdir(origin_dir)
