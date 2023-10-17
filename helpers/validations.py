@@ -49,9 +49,9 @@ class ValidateBasics:
         for subject_dir in subject_dirs:
             subject = subject_dir.split('/')[-1]
             path = self.origin_dir + '/' + subject_dir
-            eeg = glob(path + '/**/*.eeg')
-            vhdr = glob(path + '/**/*.vhdr')
-            vmrk = glob(path + '/**/*.vmrk')
+            eeg = glob(path + '/**/*.eeg', recursive=True)
+            vhdr = glob(path + '/**/*.vhdr', recursive=True)
+            vmrk = glob(path + '/**/*.vmrk', recursive=True)
             if not eeg or not vhdr or not vmrk:
                 raise ValueError('Subject {} is missing one or more of the data files'.format(subject))
 
