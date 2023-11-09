@@ -3,19 +3,32 @@
 import sys
 from collections import OrderedDict
 import json
+from pathlib import Path
 from mne_bids.path import BIDSPath
 # Import custom modules
-from helpers.validations import *
-from helpers.modality_agnostic import *
-from helpers.modality_specific import *
-from helpers.make_readme import *
-from helpers.create_eeg_dirs import *
+from helpers.validations import ValidateBasics, final_validation
+from helpers.modality_agnostic import get_dataset_description
+from helpers.modality_specific import (
+        get_eeg_json, 
+        get_channels_tsv,
+        get_electrodes_tsk
+)
+from helpers.make_readme import initialize_readme, create_readme
+from helpers.parse_command_line import parse_command_line
+from helpers.create_eeg_dirs import (
+        get_base_filenames, 
+        init_eeg_dir,
+        load_raw_brainvision,
+        make_bids_data,
+        make_bids_filestem,
+        write_file
+)
 from helpers.mne_bids_mods import _write_dig_bids
 
 
 '''
 This script should be executed from the command line with Python.
-It needs at least one argument, which is the directory of the raw data to
+It has one required command line argument, which is the directory of the raw data to
 be converted. 
 A destination directory can optionally be provided 
 Otherwise, destination directory will be the dataset name (set in the
@@ -24,55 +37,33 @@ dataset_description.json) with suffix _BIDS
 
 '''
 
+# Decide whether to write raw data to .edf or just copy it as is
+make_edf = False
 
 
 if __name__ == '__main__':
     
-    # Read command line arguments from user
-    args = sys.argv[1:]
-    # If no command line arguments given, quit
-    # For now, restrict args to only source and dest
-    if len(args) < 1 or len(args) > 2:
-        print('Usage: python eeg-to-bids.py origin_dir <dest_dir>')
-        sys.exit(1)
-
-    # Import dataset description
-    dataset_description = get_dataset_description()
-
-    # Save command line arguments as separate variables
-    origin_dir = args[0]
-    if len(args) == 2:
-        dest_dir = args[1]
-    else:
-        prefix = re.sub(r'[^\w]', '', dataset_description['Name'])
-        dest_dir = '_'.join([prefix, 'BIDS_data'])
-
-    # Decide whether to write raw data to .edf or just copy it as is
-    make_edf = False
-
-    # Ensure the origin directory exists
-    if not os.path.exists(origin_dir):
-        print('The origin path for the source data that you supplied cannot be found.')
-        sys.exit(1)
+    # Parse user command line input
+    origin_path, dest_path = parse_command_line(sys.argv[0:])
 
     # Initialize and run basic validation
     # see helpers/validation.py
-    vb = ValidateBasics(origin_dir)
+    vb = ValidateBasics(origin_path)
     vb.confirm_subject_count()
     vb.confirm_subject_data()
     task_name = vb.confirm_task_name()
 
     # Create destination directory
-    if not os.path.exists(dest_dir):
-        os.mkdir(dest_dir)
+    if not dest_path.exists():
+        os.mkdir(dest_path)
     
     # Compile dataset description
     # ** Could expand this to a class to handle all Level 1 files
-    with open(dest_dir + '/dataset_description.json', 'w') as ff:
+    with open(dest_path + '/dataset_description.json', 'w') as ff:
         json.dump(dataset_description, ff, sort_keys=False, indent=4)
 
     # Initialize a README
-    create_readme(dest_dir, dataset_description)
+    create_readme(dest_path, dataset_description)
 
     # NEED TO ADD
     # participants.tsv, participants.json, task-TASKNAME_events.json
@@ -81,9 +72,9 @@ if __name__ == '__main__':
     #montage = mne.channels.read_custom_montage(fname='./BC-MR3-32.bvef')
 
     # Grab all first-level dirs in origin dir
-    all_dirs = os.listdir(origin_dir)
-    # Keep only elements of the form '\d\d\d'
-    subjects = [x for x in all_dirs if x.isdigit() and len(x)==3]
+    all_dirs = os.listdir(origin_path)
+    # Keep only elements of the form '\d\d' or '\d\d\d'
+    subjects = [x for x in all_dirs if x.isdigit() and len(x) in [2, 3]]
 
     # Iterate over subjects
     for subject in subjects:
@@ -97,6 +88,8 @@ if __name__ == '__main__':
             bids_filestem = make_bids_filestem(subject,
                                                task_name,
                                                run)
+            
+            # Intervene around here to fork to eeg vs fmri
 
             # Make write directory string (no filename)
             write_dir = '/'.join([dest_dir, 
