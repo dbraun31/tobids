@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Dave Braun (2023)
+import os
 import sys
 from collections import OrderedDict
 import json
@@ -11,10 +12,14 @@ from helpers.modality_agnostic import get_dataset_description
 from helpers.modality_specific import (
         get_eeg_json, 
         get_channels_tsv,
-        get_electrodes_tsk
+        get_electrodes_tsv
 )
 from helpers.make_readme import initialize_readme, create_readme
-from helpers.parse_command_line import parse_command_line
+from helpers.basic_parsing import (
+        parse_command_line, 
+        parse_subjects, 
+        parse_data_type
+)
 from helpers.create_eeg_dirs import (
         get_base_filenames, 
         init_eeg_dir,
@@ -42,9 +47,12 @@ make_edf = False
 
 
 if __name__ == '__main__':
+
+    # Import dataset description
+    dataset_description = get_dataset_description()
     
     # Parse user command line input
-    origin_path, dest_path = parse_command_line(sys.argv[0:])
+    origin_path, dest_path = parse_command_line(sys.argv[1:], dataset_description)
 
     # Initialize and run basic validation
     # see helpers/validation.py
@@ -53,13 +61,14 @@ if __name__ == '__main__':
     vb.confirm_subject_data()
     task_name = vb.confirm_task_name()
 
+
     # Create destination directory
     if not dest_path.exists():
         os.mkdir(dest_path)
     
     # Compile dataset description
     # ** Could expand this to a class to handle all Level 1 files
-    with open(dest_path + '/dataset_description.json', 'w') as ff:
+    with open(dest_path / Path('dataset_description.json'), 'w') as ff:
         json.dump(dataset_description, ff, sort_keys=False, indent=4)
 
     # Initialize a README
@@ -71,15 +80,20 @@ if __name__ == '__main__':
     # Load montage
     #montage = mne.channels.read_custom_montage(fname='./BC-MR3-32.bvef')
 
-    # Grab all first-level dirs in origin dir
-    all_dirs = os.listdir(origin_path)
-    # Keep only elements of the form '\d\d' or '\d\d\d'
-    subjects = [x for x in all_dirs if x.isdigit() and len(x) in [2, 3]]
+    # Get subject info
+    # list of dict (each subject is element) with keys
+        # number, path, sessions
+        # sessions is a dict with key session number and value as path
+    subjects = parse_subjects(origin_path)
+
+    # Determine whether there is eeg and / or fmri data
+    eeg, fmri = parse_data_type(origin_path)
 
     # Iterate over subjects
     for subject in subjects:
-        print('\nProcessing Subject {}'.format(subject))
-        # Grab full file paths by run (without extensions)
+        print('\nProcessing Subject {}'.format(subject['number']))
+        sys.exit(1)
+        # Grab full file paths by run (without extensions))
         base_filenames = get_base_filenames(origin_dir, subject)
         # Make subject-specific BIDs files for each run
         for run, base_filename in enumerate(base_filenames):

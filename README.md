@@ -102,6 +102,9 @@ to be structured thus:
 
 where `sample_data` is the original directory, and each next-level directory is a subject number containing all of a subject's data.
 
+*Note: the folder `sample_data` can be named anything. You will just need
+to point to this directory when running the program.*
+
 To execute `tobids`, run the following command:
 
 ```bash
@@ -125,6 +128,7 @@ files, `tobids` will run the `bids-validator` tool created by the [BIDS team](ht
 
 * Improve function documentation.
 * More sophisticated command-line argument parsing.
+* Better path variable handling
 * Generalize to other data types.
 * Figure out the coordinate system and how to produce `*_coordsystem.json`.
 * How to reference the `*.bvef` file for making a montage. Might need to

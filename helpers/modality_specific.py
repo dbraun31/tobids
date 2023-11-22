@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 import pandas as pd
 from collections import OrderedDict
 from mne.channels.channels import _unit2human

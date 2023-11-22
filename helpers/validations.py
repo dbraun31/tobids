@@ -5,6 +5,7 @@ from glob import glob
 import os
 import re
 import sys
+from pathlib import Path
 
 class ValidateBasics:
     '''
@@ -48,7 +49,7 @@ class ValidateBasics:
 
         for subject_dir in subject_dirs:
             subject = subject_dir.split('/')[-1]
-            path = self.origin_dir + '/' + subject_dir
+            path = str(self.origin_dir / Path(subject_dir))
             eeg = glob(path + '/**/*.eeg', recursive=True)
             vhdr = glob(path + '/**/*.vhdr', recursive=True)
             vmrk = glob(path + '/**/*.vmrk', recursive=True)
@@ -69,7 +70,7 @@ class ValidateBasics:
         A-Z characters (converts to uppercase)
         '''
         # Grab the first .eeg file
-        file = glob(self.origin_dir + '/**/*.eeg', recursive=True)[0].split('/')[-1]
+        file = glob(str(self.origin_dir) + '/**/*.eeg', recursive=True)[0].split('/')[-1]
 
         # Extract task name from this file name
         # (Pulls everything before the first digit, removes underscores and
