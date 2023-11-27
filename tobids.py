@@ -23,17 +23,6 @@ from helpers.basic_parsing import (
         make_skeleton
 )
 from helpers.eeg_tools import write_eeg
-'''
-delete if not needed
-from helpers.create_eeg_dirs import (
-        get_eeg_paths, 
-        init_eeg_dir,
-        load_raw_brainvision,
-        make_bids_data,
-        make_bids_filestem,
-        write_file
-)
-'''
 from helpers.mne_bids_mods import _write_dig_bids
 
 
@@ -59,6 +48,9 @@ if __name__ == '__main__':
     
     # Parse user command line input
     origin_path, dest_path = parse_command_line(sys.argv[1:], dataset_description)
+
+    # Put everthing inside 'rawdata'
+    dest_path = dest_path / Path('rawdata')
 
     # Initialize and run basic validation
     # see helpers/validation.py
@@ -117,16 +109,16 @@ if __name__ == '__main__':
 
                 write_eeg(eeg_files, write_path / Path('eeg'), make_edf)
 
-            # dev
             fmri = False
             if fmri:
                 # Get root fmri dir 
                 # (the one with all the fmri dirs from the scan nested inside)
                 fmri_root = glob(str(seek_path) + '/**/*.nii', recursive=True)
-                fmri_root = Path(fmri_root[0]).parent.parent
-
+                fmri_root = Path(fmri_root[0]).parent.parent.parent
+                
                 # This doesn't exist yet
-                write_fmri(fmri_root, write_path)
+                meta_info = {'subject': subject_arg, 'session': session_arg}
+                write_fmri(fmri_root, write_path, meta_info)
     
     # Validate final directory
     final_validation(dest_path)

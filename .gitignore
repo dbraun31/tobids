@@ -10,3 +10,5 @@ docs/
 EEG_FMRI/
 *.json
 *.tsv
+*.nii.gz
+*.nii

@@ -149,7 +149,7 @@ def make_skeleton(subjects, dest_path, eeg, fmri):
 
         for session_dir in session_dirs:
             for modality in modalities:
-                p = dest_path /subject_dir / session_dir / Path(modality)
+                p = dest_path / subject_dir / session_dir / Path(modality)
                 if not os.path.exists(p):
                     os.makedirs(p)
 

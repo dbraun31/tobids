@@ -115,9 +115,14 @@ def final_validation(dest_dir):
     file_paths = []
 
     for root, dirs, files in os.walk(dest_dir):
-        root = '/'.join(root.split('/')[1:])
-        for file in files:
-            file_paths.append('/' + os.path.join(root, file))
+        if files:
+            root_chop = 1
+            # Take out 'rawdata' dir if its there
+            if 'rawdata' in root:
+                root_chop = 2
+            root = '/'.join(root.split('/')[root_chop:])
+            for file in files:
+                file_paths.append('/' + os.path.join(root, file))
 
     validator = BIDSValidator()
 
@@ -126,8 +131,6 @@ def final_validation(dest_dir):
     for path in file_paths:
         if validator.is_bids(path):
             result += 1
-        else:
-            print(path)
 
     score = round((result / len(file_paths))*100, 2)
     print("\nFinal validation of output directory.\n{}% of files in the output directory are BIDs compatible.".format(score))

@@ -1,3 +1,3 @@
-# README for dataset EEG-FMRI
+# README for dataset eeg-frmi
 
 Thorough description goes here
