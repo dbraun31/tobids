@@ -8,3 +8,5 @@ literature/
 docs/
 *.bvef
 EEG_FMRI/
+*.json
+*.tsv

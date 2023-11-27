@@ -114,3 +114,44 @@ def parse_data_type(origin_path):
         fmri = True
 
     return (eeg, fmri)
+
+def make_skeleton(subjects, dest_path, eeg, fmri):
+    '''
+    Takes as input
+        subjects
+            list of dicts for each subject
+            with keys: number, path, sessions
+            sessions is its own dict with key session number and value as
+            path
+            False if no sessions
+        dest path as pathlib.Path
+        eeg and fmri are booleans indicating whether that data is present
+    Makes the template bids-compatible folder structure
+    '''
+    modalities = []
+
+    if eeg:
+        modalities.append('eeg')
+    if fmri:
+        modalities += ['anat', 'func', 'fmap']
+
+    if not modalities:
+        raise ValueError('We need some type of neuro data')
+
+    for subject in subjects:
+        subject_dir = Path('sub-' + subject['number'])
+        # Session dirs is an empty path if there is only one session
+        session_dirs = [Path('')]
+        if subject['sessions']:
+            session_dirs = []
+            for session in subject['sessions'].keys():
+                session_dirs.append(Path('ses-' + session))
+
+        for session_dir in session_dirs:
+            for modality in modalities:
+                p = dest_path /subject_dir / session_dir / Path(modality)
+                if not os.path.exists(p):
+                    os.makedirs(p)
+
+
+    

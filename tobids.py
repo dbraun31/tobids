@@ -2,6 +2,7 @@
 # Dave Braun (2023)
 import os
 import sys
+from glob import glob
 from collections import OrderedDict
 import json
 from pathlib import Path
@@ -18,16 +19,21 @@ from helpers.make_readme import initialize_readme, create_readme
 from helpers.basic_parsing import (
         parse_command_line, 
         parse_subjects, 
-        parse_data_type
+        parse_data_type,
+        make_skeleton
 )
+from helpers.eeg_tools import write_eeg
+'''
+delete if not needed
 from helpers.create_eeg_dirs import (
-        get_base_filenames, 
+        get_eeg_paths, 
         init_eeg_dir,
         load_raw_brainvision,
         make_bids_data,
         make_bids_filestem,
         write_file
 )
+'''
 from helpers.mne_bids_mods import _write_dig_bids
 
 
@@ -59,26 +65,6 @@ if __name__ == '__main__':
     vb = ValidateBasics(origin_path)
     vb.confirm_subject_count()
     vb.confirm_subject_data()
-    task_name = vb.confirm_task_name()
-
-
-    # Create destination directory
-    if not dest_path.exists():
-        os.mkdir(dest_path)
-    
-    # Compile dataset description
-    # ** Could expand this to a class to handle all Level 1 files
-    with open(dest_path / Path('dataset_description.json'), 'w') as ff:
-        json.dump(dataset_description, ff, sort_keys=False, indent=4)
-
-    # Initialize a README
-    create_readme(dest_path, dataset_description)
-
-    # NEED TO ADD
-    # participants.tsv, participants.json, task-TASKNAME_events.json
-
-    # Load montage
-    #montage = mne.channels.read_custom_montage(fname='./BC-MR3-32.bvef')
 
     # Get subject info
     # list of dict (each subject is element) with keys
@@ -89,84 +75,58 @@ if __name__ == '__main__':
     # Determine whether there is eeg and / or fmri data
     eeg, fmri = parse_data_type(origin_path)
 
+    # Set up basic directory structure
+    make_skeleton(subjects, dest_path, eeg, fmri)
+
+    # INITIALIZE TOP LEVEL FILES #
+    # -- Compile dataset description
+    with open(dest_path / Path('dataset_description.json'), 'w') as ff:
+        json.dump(dataset_description, ff, sort_keys=False, indent=4)
+
+    # -- Initialize a README
+    create_readme(dest_path, dataset_description)
+
     # Iterate over subjects
     for subject in subjects:
         print('\nProcessing Subject {}'.format(subject['number']))
-        sys.exit(1)
-        # Grab full file paths by run (without extensions))
-        base_filenames = get_base_filenames(origin_dir, subject)
-        # Make subject-specific BIDs files for each run
-        for run, base_filename in enumerate(base_filenames):
 
-            # Make bids filestem (ie, filename without suffix)
-            bids_filestem = make_bids_filestem(subject,
-                                               task_name,
-                                               run)
-            
-            # Intervene around here to fork to eeg vs fmri
+        # Handle sessions
+        if subject['sessions']:
+            sessions = list(subject['sessions'].keys())
+        else:
+            sessions = '-999'
 
-            # Make write directory string (no filename)
-            write_dir = '/'.join([dest_dir, 
-                                  'sub-{}'.format(subject),
-                                  'eeg']) + '/'
+        # Iterate over sessions
+        for session in sessions:
+            if sessions == '-999':
+                session_path = Path('')
+            else:
+                session_path = subject['sessions'][session]
 
-
-            # Initialize EEG directory for a subject
-            init_eeg_dir(subject, dest_dir)
-
-            # Get raw data
-            raw = load_raw_brainvision(base_filename)
-
-            # Write / copy raw data to BIDs dir
-            make_bids_data(dest_dir,
-                           bids_filestem, 
-                           raw, 
-                           base_filename, 
-                           subject,
-                           make_edf=make_edf)
-
-            # Compile and write *_eeg.json
-            eeg_json = get_eeg_json(task_name, raw)
-            write_file(eeg_json, write_dir, bids_filestem, 'eeg', '.json')
-
-            # Unsure about *_events.tsv
-
-            # Compile and write *_channels.tsv
-            channels_tsv = get_channels_tsv(raw) 
-            write_file(channels_tsv, 
-                       write_dir, 
-                       bids_filestem, 
-                       'channels',
-                       '.tsv')
-
-            '''
-            # Compile and write *_electrodes.tsv
-            electrodes_tsv = get_electrodes_tsv(raw)
-            write_file(electrodes_tsv,
-                       write_dir,
-                       bids_filestem,
-                       'electrodes',
-                       '.tsv')
-
-            THE BELOW FUNCTION can't recover the coordinate system used
-            it failed to be inferred from the montage
-            it can be supplied to BIDSPath.space
+            seek_path = origin_path / subject['path'] / session_path
+            # Build write path
+            subject_arg = Path('sub-' + subject['number'])
+            session_arg = Path('ses-' + session)
+            write_path = dest_path / subject_arg / session_arg
 
 
-            # Compile and write *_coordsystem.json
-            bids_path = BIDSPath(subject=subject,
-                                 task=task_name,
-                                 run=run,
-                                 suffix='coordsystem',
-                                 extension='.json',
-                                 datatype='eeg',
-                                 root=dest_dir)
+            if eeg:
+                # Get all *.eeg files for that subject/session
+                eeg_files = glob(str(seek_path) + '/**/*.eeg', recursive=True)
+                eeg_files = [Path(x) for x in eeg_files]
 
-            _write_dig_bids(bids_path,
-                            raw,
-                            montage=montage,
-                            overwrite=True)
-            '''
+                write_eeg(eeg_files, write_path / Path('eeg'), make_edf)
+
+            # dev
+            fmri = False
+            if fmri:
+                # Get root fmri dir 
+                # (the one with all the fmri dirs from the scan nested inside)
+                fmri_root = glob(str(seek_path) + '/**/*.nii', recursive=True)
+                fmri_root = Path(fmri_root[0]).parent.parent
+
+                # This doesn't exist yet
+                write_fmri(fmri_root, write_path)
     
     # Validate final directory
-    final_validation(dest_dir)
+    final_validation(dest_path)

@@ -1,5 +1,6 @@
 # Dave Braun (2023)
 
+from pathlib import Path
 import json
 import shutil
 import pandas as pd
@@ -15,25 +16,23 @@ I need to determine if base_filename has a trailing /
 '''
 
 
-def get_base_filenames(origin_dir, subject):
+def get_eeg_paths(origin_path, subject):
     '''
     This function takes as input:
         The origin directory
         A subject id (eg, 006)
-    Return the base filename (ie, file path with no extension)
+    Returns list of Path objects to each *.eeg file for a subject
 
     Assumes files are labeled in order of run number
     '''
     # Grab raw file names
-    base_filenames = glob('/'.join([origin_dir,subject]) + '/**/*.eeg', recursive=True)
+    base_filenames = glob(str(origin_path / Path(subject['path'])) + '/**/*.eeg', recursive=True)
     # Sort in order of run number
     base_filenames= sorted(base_filenames)
-    # Remove file extension
-    base_filenames = [x.split('.')[0] for x in base_filenames]
     # Keep only unique
     base_filenames = list(set(base_filenames))
 
-    return base_filenames
+    return [Path(x) for x in base_filenames]
 
 def init_eeg_dir(subject, dest_dir):
     '''
@@ -44,32 +43,6 @@ def init_eeg_dir(subject, dest_dir):
     
     if not os.path.exists(to_make):
         os.makedirs(to_make)
-
-def load_raw_brainvision(base_filename):
-    '''
-    Takes in base_filename (path to file with no extension)
-    Returns the raw data as mne object
-    '''
-
-    dest_dir_path = _get_directory_path(base_filename)
-    filestem = _get_filestem(base_filename)
-    with open(base_filename + '.vhdr', 'r') as old_file:
-        with open(dest_dir_path + 'temp.vhdr', 'w') as new_file:
-            for line in old_file:
-                if 'DataFile' in line:
-                    line = 'DataFile={}'.format(filestem + '.eeg\n')
-                if 'MarkerFile' in line:
-                    line = 'MarkerFile={}'.format(filestem + '.vmrk\n')
-                new_file.write(line)
-    new_file.close()
-
-    # Load data
-    raw = mne.io.read_raw_brainvision(dest_dir_path + 'temp.vhdr', 
-                                      preload=False,
-                                      verbose='error')
-    # Remove temporary vhdr
-    os.remove(dest_dir_path + 'temp.vhdr')
-    return raw
 
 
 
@@ -131,7 +104,7 @@ def make_bids_filestem(subject, task_name, run):
                      'task-{}'.format(task_name),
                      'run-{}'.format(run)])
 
-def write_file(data, write_dir, bids_filestem, suffix, extension):
+def write_file(data, write_path, suffix, extension):
     '''
     Writes out a BIDS compatible metadata (.tsv, .json) file
 
@@ -145,7 +118,7 @@ def write_file(data, write_dir, bids_filestem, suffix, extension):
     extension: str; extension of file to write (eg, .tsv)
     '''
     
-    write_str = write_dir + bids_filestem + '_' + suffix + extension
+    write_str = str(write_path) + '_' + suffix + extension
     
     if extension == '.tsv':
         data.to_csv(write_str, sep='\t', index=False)

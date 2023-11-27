@@ -126,6 +126,8 @@ def final_validation(dest_dir):
     for path in file_paths:
         if validator.is_bids(path):
             result += 1
+        else:
+            print(path)
 
     score = round((result / len(file_paths))*100, 2)
     print("\nFinal validation of output directory.\n{}% of files in the output directory are BIDs compatible.".format(score))
