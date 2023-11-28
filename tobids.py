@@ -2,6 +2,7 @@
 # Dave Braun (2023)
 import os
 import sys
+from tqdm import tqdm
 from glob import glob
 from collections import OrderedDict
 import json
@@ -24,6 +25,7 @@ from helpers.basic_parsing import (
 )
 from helpers.eeg_tools import write_eeg
 from helpers.mne_bids_mods import _write_dig_bids
+from helpers.fmri_tools import write_fmri
 
 
 '''
@@ -103,22 +105,25 @@ if __name__ == '__main__':
 
 
             if eeg:
+                print('Writing EEG data')
                 # Get all *.eeg files for that subject/session
                 eeg_files = glob(str(seek_path) + '/**/*.eeg', recursive=True)
                 eeg_files = [Path(x) for x in eeg_files]
 
                 write_eeg(eeg_files, write_path / Path('eeg'), make_edf)
+                print('Done writing EEG data!')
 
-            fmri = False
             if fmri:
+                print('Writing fMRI data')
                 # Get root fmri dir 
                 # (the one with all the fmri dirs from the scan nested inside)
                 fmri_root = glob(str(seek_path) + '/**/*.nii', recursive=True)
+                progress_bar = tqdm(total = len(fmri_root), desc='Processing')
                 fmri_root = Path(fmri_root[0]).parent.parent.parent
                 
-                # This doesn't exist yet
-                meta_info = {'subject': subject_arg, 'session': session_arg}
-                write_fmri(fmri_root, write_path, meta_info)
+                meta_info = {'subject': str(subject_arg), 'session': str(session_arg)}
+                write_fmri(fmri_root, write_path, meta_info, progress_bar)
+                print('Done writing fMRI data!')
     
     # Validate final directory
     final_validation(dest_path)
