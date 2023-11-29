@@ -1,9 +1,12 @@
 # ToBids
 
-ToBids is a general Python tool developed for the [Dynamic Mind and Brain Lab](https://sites.google.com/site/aaronkucyi)
+ToBids is a general Python tool developed for the [Dynamic Brain and Mind Lab](https://sites.google.com/site/aaronkucyi)
 to convert raw neuro data to [BIDS](https://bids.neuroimaging.io/) format.
 This tool provides a command-line interface for easy data
 conversion.
+
+`tobids` version 1.1.0 is currently compatible with Brainvision EEG data (`.eeg`,
+`.vhdr`, `.vmrk`) and NIFTI fMRI data (`.nii`).
 
 All questions can be directed to Dave Braun: dave.braun@drexel.edu
 
@@ -89,21 +92,8 @@ $ export PATH="$HOME/.local/bin:$PATH"
 ## Usage
 
 `tobids` has as its only required argument the path to the directory
-containing the original raw data. `tobids` currently has the **important
-limitation** that the directory pointed to with the original raw data needs
-to be structured thus:
+containing the original raw data. 
 
-```
-├── sample_data
-│   ├── 006
-│   ├── 007
-│   └── 008
-```
-
-where `sample_data` is the original directory, and each next-level directory is a subject number containing all of a subject's data.
-
-*Note: the folder `sample_data` can be named anything. You will just need
-to point to this directory when running the program.*
 
 To execute `tobids`, run the following command:
 
@@ -117,20 +107,55 @@ After the BIDS directory is completed and populated with all necessary
 files, `tobids` will run the `bids-validator` tool created by the [BIDS team](https://github.com/bids-standard/bids-validator) to ensure all files are BIDS compatible.
 
 
+## Source data format
+
+`tobids` makes several assumptions about the structure of the source data
+that the user points to. The top-level directory that contains this data
+will be referred to as the *root directory*. The root directory can have
+any name.
+
+**Assumptions:**
+
+* Directories containing all data for each subject need to be *one level
+    under* the root directory (eg, `my_source_data/subject_01`). The
+    subject directories just need a number somewhere in the directory name
+    to be used as the subject label; otherwise the exact naming convention
+    doesn't matter.
+* If there are sessions, session directories need to be *one level under*
+    the subject directories (eg, `my_source_data/subject_01/session_01`).
+    Again, there just needs to be a number somewhere in the name of this
+    session directory. If there are no sessions, you can omit session
+    folders.
+* EEG data files are stored *one level under* a directory labeled according
+    to the task performed (eg,
+    `my_source_data/subject_01/.../GradCPT/my_file_name.eeg`). The entire
+    name of this task directory is used as the "task" argument in the
+    BIDS filenames.
+* Raw fMRI data are assumed to have extension `.nii` and need to be located
+    *two levels below* the main fMRI directory containing the different
+    scans.
+
+
+
 ## Release notes
 
-* **1.0.0**
+* **1.1.0** (2023-11-29)
+    * Support for NIFTI fMRI (`.nii`) added. Compresses to `.nii.gz`.
+    * Queries the user as to whether to overwrite existing data in the BIDS
+        directory.
+    * Included support for multiple sessions.
+    * More intelligent handling of paths.
+    * Progress bar added.
+
+
+* **1.0.0** (2023-10-14)
 	* `tobids` is currently only equipped to handle BrainVision EEG data.
 	* BrainVision data format (`.eeg`, `.vhdr`, `.vmrk`) is acceptable in BIDS, and so the default behavior is to simply rename and move the data files. `tobids` includes functions for converting the data to `.edf`; future iterations of `tobids` can make this feature available via a command line option.
 	* As noted above, `tobids` requires the source data to be structured such that the directories immediately inside the root directory are three-digit subject numbers. `tobids` will find and exclude any other directories at this level that don't match this format.
 
 ### Still to do
 
-* Improve function documentation.
 * More sophisticated command-line argument parsing.
-* Better path variable handling
-* Generalize to other data types.
 * Figure out the coordinate system and how to produce `*_coordsystem.json`.
 * How to reference the `*.bvef` file for making a montage. Might need to
     have user point to it.
-* Probably lots of other things...
