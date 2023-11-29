@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 def initialize_readme(dest_dir, dataset_description):
     '''
@@ -7,7 +8,7 @@ def initialize_readme(dest_dir, dataset_description):
     '''
 
     readme = '# README for dataset {}\n\nThorough description goes here'.format(dataset_description['Name'])
-    with open(dest_dir + '/README.md', 'w') as ff:
+    with open(dest_dir / Path('README.md'), 'w') as ff:
         ff.write(readme)
     ff.close()
 
@@ -26,7 +27,7 @@ def create_readme(dest_dir, dataset_description):
             print("Readme file doesn't exist. Initializing a blank one.")
             initialize_readme(dest_dir, dataset_description)
         else:
-            os.rename(readme_dir, dest_dir + '/README.md')
+            os.rename(readme_dir, dest_dir + Path('README.md'))
 
     # If no readme already exists, create one
     else:

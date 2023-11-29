@@ -5,6 +5,7 @@ from glob import glob
 import os
 import re
 import sys
+from pathlib import Path
 
 class ValidateBasics:
     '''
@@ -24,7 +25,12 @@ class ValidateBasics:
         Confirms with user
         Returns sample size
         '''
-        N = len(os.listdir(self.origin_dir))
+        # Import all first-level dirs
+        dirs = [d for d in os.listdir(self.origin_dir) if os.path.isdir(self.origin_dir/ Path(d))]
+
+        # Only keep dir if there's a number in it
+        dirs = [d for d in dirs if any(char.isdigit() for char in d)]
+        N = len(dirs)
         response = ''
 
         while response not in ['y', 'n']:
@@ -44,11 +50,15 @@ class ValidateBasics:
         Quits the script if any are missing (but this should be updated to just
         drop the subject)
         '''
-        subject_dirs = os.listdir(self.origin_dir)
+        # Import all first-level dirs
+        dirs = [d for d in os.listdir(self.origin_dir) if os.path.isdir(self.origin_dir/ Path(d))]
+
+        # Only keep dir if there's a number in it
+        subject_dirs = [d for d in dirs if any(char.isdigit() for char in d)]
 
         for subject_dir in subject_dirs:
             subject = subject_dir.split('/')[-1]
-            path = self.origin_dir + '/' + subject_dir
+            path = str(self.origin_dir / Path(subject_dir))
             eeg = glob(path + '/**/*.eeg', recursive=True)
             vhdr = glob(path + '/**/*.vhdr', recursive=True)
             vmrk = glob(path + '/**/*.vmrk', recursive=True)
@@ -57,53 +67,6 @@ class ValidateBasics:
 
         self.subject_data_present = 'Yes'
 
-    def confirm_task_name(self):
-        '''
-        Takes as input the origin directory as a string
-        Extracts task name from subject data file
-        Confirms with user / asks for new name
-
-        ** This script guesses that everything before the first digit will be
-        the task name (can revisit this assumption)
-        ** This script also cleans the task name such that it contains only
-        A-Z characters (converts to uppercase)
-        '''
-        # Grab the first .eeg file
-        file = glob(self.origin_dir + '/**/*.eeg', recursive=True)[0].split('/')[-1]
-
-        # Extract task name from this file name
-        # (Pulls everything before the first digit, removes underscores and
-        # dashes)
-        task_name_search = re.search(r'^\D+', file)
-
-        # If we recover a potential task name from the filename
-        if task_name_search:
-            task_name = task_name_search.group()
-            # Remove _ and -
-            task_name = re.sub(r'[^a-z^A-Z]', '', task_name)
-            response = ''
-            # Ask if okay
-            while response not in ['y', 'n']:
-                response = input("\nI need a name for the task. Would you like to call the task {}? [y/n] ".format(task_name)).lower()
-            # If not okay, get task name and clean string
-            if response == 'n':
-                task_name = ''
-                while not task_name:
-                    task_name = input('\nPlease enter a name for the task: ')
-                task_name = re.sub(r'[^a-z^A-Z]', '', task_name)
-
-        # If we didn't recover a potential task name, ask for one
-        else:
-            task_name = input('\nPlease enter a name for the task: ')
-            task_name = re.sub(r'[^a-z^A-Z]', '', task_name)
-
-        print('\nThe task will be called {}'.format(task_name.upper()))
-
-        return task_name.upper()
-
-    def generate_dataset_description(self):
-        # see ./helpers/get_dataset_description
-        return ''
 
 
 def final_validation(dest_dir):
@@ -114,19 +77,32 @@ def final_validation(dest_dir):
     file_paths = []
 
     for root, dirs, files in os.walk(dest_dir):
-        root = '/'.join(root.split('/')[1:])
-        for file in files:
-            file_paths.append('/' + os.path.join(root, file))
+        if files:
+            root_chop = 1
+            # Take out 'rawdata' dir if its there
+            if 'rawdata' in root:
+                root_chop = 2
+            root = '/'.join(root.split('/')[root_chop:])
+            for file in files:
+                file_paths.append('/' + os.path.join(root, file))
 
     validator = BIDSValidator()
 
     result = 0
+    bad_files = []
 
     for path in file_paths:
         if validator.is_bids(path):
             result += 1
+        else:
+            bad_files.append(path)
 
     score = round((result / len(file_paths))*100, 2)
     print("\nFinal validation of output directory.\n{}% of files in the output directory are BIDs compatible.".format(score))
+    if bad_files:
+        print('\n\n')
+        print('Here are the incompatible files:')
+        for file in bad_files:
+            print(file)
 
 

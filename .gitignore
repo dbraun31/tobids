@@ -7,3 +7,8 @@ sample_data/
 literature/
 docs/
 *.bvef
+EEG_FMRI/
+*.json
+*.tsv
+*.nii.gz
+*.nii
