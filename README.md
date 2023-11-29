@@ -145,13 +145,14 @@ any name.
         directory.
     * Included support for multiple sessions.
     * More intelligent handling of paths.
+    * More robust subject directory discovery.
     * Progress bar added.
 
 
 * **1.0.0** (2023-10-14)
 	* `tobids` is currently only equipped to handle BrainVision EEG data.
 	* BrainVision data format (`.eeg`, `.vhdr`, `.vmrk`) is acceptable in BIDS, and so the default behavior is to simply rename and move the data files. `tobids` includes functions for converting the data to `.edf`; future iterations of `tobids` can make this feature available via a command line option.
-	* As noted above, `tobids` requires the source data to be structured such that the directories immediately inside the root directory are three-digit subject numbers. `tobids` will find and exclude any other directories at this level that don't match this format.
+	* `tobids` requires the source data to be structured such that the directories immediately inside the root directory are three-digit subject numbers. `tobids` will find and exclude any other directories at this level that don't match this format.
 
 ### Still to do
 
