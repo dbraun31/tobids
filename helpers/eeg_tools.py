@@ -13,7 +13,7 @@ import mne
 ## still need all the imports =(
 
 
-def write_eeg(eeg_files, write_path, make_edf):
+def write_eeg(eeg_files, write_path, make_edf, overwrite, progress_bar):
     '''
     Takes as input list of *.eeg files for one subject / session
     And the start of the write path (dest/sub-<>/ses-<>/eeg)
@@ -33,6 +33,10 @@ def write_eeg(eeg_files, write_path, make_edf):
             # Build write file name
             subject = write_path.parent.parent.name
             session = write_path.parent.name
+            # Account for data without sessions
+            if 'ses' not in str(session):
+                subject = write_path.parent.name
+                session = ''
             task = 'task-{}'.format(task_name)
             run = 'run-{}'.format(str(run).zfill(3))
             write_filename = '_'.join([subject, session, task, run])
@@ -40,7 +44,13 @@ def write_eeg(eeg_files, write_path, make_edf):
 
             # Start writing files
             raw = _load_raw_brainvision(read_path)
-            _make_bids_data(read_path, write_stem, raw, make_edf)
+            _make_bids_data(read_path, 
+                            write_stem, 
+                            raw, 
+                            make_edf,
+                            overwrite,
+                            progress_bar)
+
             # Compile and write eeg metadata
             eeg_json = get_eeg_json(task_name, raw)
             _write_file(eeg_json, write_stem, 'eeg', '.json')
@@ -93,7 +103,7 @@ def _load_raw_brainvision(read_path):
     os.remove(str(read_path.parent) + '/temp.vhdr')
     return raw
 
-def _make_bids_data(read_path, write_stem, raw, make_edf):
+def _make_bids_data(read_path, write_stem, raw, make_edf, overwrite, progress_bar):
     '''
     Writes BIDs compatible data in the destination directory
 
@@ -116,18 +126,24 @@ def _make_bids_data(read_path, write_stem, raw, make_edf):
         sf = raw.info['sfreq']
         signal_headers = highlevel.make_signal_headers(channel_names, 
                                                        sample_frequency=sf)
-        highlevel.write_edf(str(write_stem) + '_eeg.edf', 
-                            raw.get_data(), 
-                            signal_headers)
-        print('\nSaved: {}'.format(str(write_stem) + '_eeg.edf'))
+        write_file = str(write_stem) + '_eeg.edf'
+        if not overwrite and not os.path.exists(write_file):
+            highlevel.write_edf(write_file,
+                                raw.get_data(), 
+                                signal_headers)
+            print('\nSaved: {}'.format(str(write_stem) + '_eeg.edf'))
+        progress_bar.update(1)
 
     else:
         extensions = ['.eeg', '.vhdr', '.vmrk']
-        #filestem = _get_filestem(base_filename)
 
         for extension in extensions:
             source_file = str(read_path.parent / read_path.stem) + extension
-            shutil.copy(source_file, str(write_stem) + '_eeg' + extension)
+            write_file = str(write_stem) + '_eeg' + extension
+            if not overwrite and not os.path.exists(write_file):
+                shutil.copy(source_file, write_file)
+        # Update progress once per triad
+        progress_bar.update(1)
 
 def _write_file(data, write_stem, suffix, extension):
     '''

@@ -4,6 +4,7 @@ from helpers.modality_agnostic import get_dataset_description
 import os
 from glob import glob
 import re
+from tqdm import tqdm
 
 def parse_command_line(args, dataset_description):
     '''
@@ -37,6 +38,18 @@ def parse_command_line(args, dataset_description):
 
     return [origin_path, dest_path]
 
+
+def get_overwrite():
+    # Ask user whether to overwrite existing data
+
+    overwrite = None
+    while overwrite is None:
+        user = input('\nDo you wish to overwrite existing data in the BIDS directory (if the directory already exists)? [y/n] ')
+        user = user.lower().strip()
+        if user in ['y', 'n']:
+            overwrite = True if user == 'y' else False
+
+    return overwrite
 
 def has_sessions(subject_path):
     '''
@@ -154,4 +167,16 @@ def make_skeleton(subjects, dest_path, eeg, fmri):
                     os.makedirs(p)
 
 
+def configure_progress_bar(origin_path):
     
+    eegs = glob(str(origin_path) + '/**/*.eeg', recursive=True)
+    bolds = glob(str(origin_path) + '/**/*_BOLD_*/**/*.nii', recursive=True)
+    fmaps = glob(str(origin_path) + '/**/*_B0map*/**/*.nii', recursive=True)
+    T1ws = glob(str(origin_path) + '/**/*_T1w_*/**/*.nii', recursive=True)
+
+    files = len(eegs) + len(bolds) + len(fmaps) + len(T1ws)
+
+    progress_bar = tqdm(total = files, desc='Processing')
+
+    return progress_bar
+ 

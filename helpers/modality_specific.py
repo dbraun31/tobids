@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import pandas as pd
+import warnings
 from collections import OrderedDict
 from mne.channels.channels import _unit2human
 from mne_bids.utils import _get_ch_type_mapping
@@ -174,5 +175,6 @@ def get_electrodes_tsv(raw):
 
 def _keep_non_empty(data):
     # Keep only non-empty entries
+    warnings.simplefilter("ignore", category=FutureWarning)
     data = OrderedDict((key, value) for key, value in data.items() if value != '')
     return data

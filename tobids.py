@@ -21,7 +21,9 @@ from helpers.basic_parsing import (
         parse_command_line, 
         parse_subjects, 
         parse_data_type,
-        make_skeleton
+        make_skeleton,
+        configure_progress_bar,
+        get_overwrite
 )
 from helpers.eeg_tools import write_eeg
 from helpers.mne_bids_mods import _write_dig_bids
@@ -42,7 +44,6 @@ dataset_description.json) with suffix _BIDS
 # Decide whether to write raw data to .edf or just copy it as is
 make_edf = False
 
-
 if __name__ == '__main__':
 
     # Import dataset description
@@ -53,6 +54,9 @@ if __name__ == '__main__':
 
     # Put everthing inside 'rawdata'
     dest_path = dest_path / Path('rawdata')
+
+    # Whether to overwrite existing data
+    overwrite = get_overwrite()
 
     # Initialize and run basic validation
     # see helpers/validation.py
@@ -69,6 +73,7 @@ if __name__ == '__main__':
     # Determine whether there is eeg and / or fmri data
     eeg, fmri = parse_data_type(origin_path)
 
+
     # Set up basic directory structure
     make_skeleton(subjects, dest_path, eeg, fmri)
 
@@ -80,6 +85,9 @@ if __name__ == '__main__':
     # -- Initialize a README
     create_readme(dest_path, dataset_description)
 
+    # Init progress bar
+    progress_bar = configure_progress_bar(origin_path)
+
     # Iterate over subjects
     for subject in subjects:
         print('\nProcessing Subject {}'.format(subject['number']))
@@ -88,11 +96,11 @@ if __name__ == '__main__':
         if subject['sessions']:
             sessions = list(subject['sessions'].keys())
         else:
-            sessions = '-999'
+            sessions = ['-999']
 
         # Iterate over sessions
         for session in sessions:
-            if sessions == '-999':
+            if sessions[0] == '-999':
                 session_path = Path('')
             else:
                 session_path = subject['sessions'][session]
@@ -105,25 +113,25 @@ if __name__ == '__main__':
 
 
             if eeg:
-                print('Writing EEG data')
                 # Get all *.eeg files for that subject/session
                 eeg_files = glob(str(seek_path) + '/**/*.eeg', recursive=True)
                 eeg_files = [Path(x) for x in eeg_files]
-
-                write_eeg(eeg_files, write_path / Path('eeg'), make_edf)
-                print('Done writing EEG data!')
+                write_eeg(eeg_files, 
+                          write_path / Path('eeg'), 
+                          make_edf,
+                          overwrite,
+                          progress_bar)
 
             if fmri:
-                print('Writing fMRI data')
                 # Get root fmri dir 
                 # (the one with all the fmri dirs from the scan nested inside)
                 fmri_root = glob(str(seek_path) + '/**/*.nii', recursive=True)
-                progress_bar = tqdm(total = len(fmri_root), desc='Processing')
                 fmri_root = Path(fmri_root[0]).parent.parent.parent
                 
                 meta_info = {'subject': str(subject_arg), 'session': str(session_arg)}
-                write_fmri(fmri_root, write_path, meta_info, progress_bar)
-                print('Done writing fMRI data!')
+                write_fmri(fmri_root, write_path, meta_info, overwrite, progress_bar)
     
     # Validate final directory
     final_validation(dest_path)
+
+

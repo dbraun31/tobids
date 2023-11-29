@@ -6,7 +6,7 @@ from pathlib import Path
 import copy
 from tqdm import tqdm
 
-def write_fmri(fmri_root, write_start, meta_info, progress_bar):
+def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
     '''
     Nested within a subject-session loop
     Moves the appropriate fmri data from source to bids dest
@@ -20,6 +20,8 @@ def write_fmri(fmri_root, write_start, meta_info, progress_bar):
     meta_info: (dict) dict containing meta info on subject and session for
                       easy file naming
                       {'subject': 'sub-001', 'session': 'ses-001'}
+    overwrite: (boolean) whether to overwrite existing data (with same
+                         name)
     '''
     
     # Get session number
@@ -29,7 +31,7 @@ def write_fmri(fmri_root, write_start, meta_info, progress_bar):
     for scan_type in ['T1w', 'B0map', 'BOLD']:
 
         # There's only one structural scan (session 1)
-        if scan_type == 'anat' and session > 1:
+        if scan_type == 'T1w' and session > 1:
             continue
 
         # Extract relevant info
@@ -60,10 +62,12 @@ def write_fmri(fmri_root, write_start, meta_info, progress_bar):
 
         # Write nifti
         for nii, dest in zip(niis, dests):
-            source_img = nib.load(nii)
             dest_path = dest.with_suffix('.nii.gz') 
+            # Handle overwriting
+            if not overwrite and not os.path.exists(dest_path):
+                source_img = nib.load(nii)
+                nib.save(source_img, dest_path)
             progress_bar.update(1)
-            nib.save(source_img, dest_path)
 
         # Write json
         for sidecar, dest in zip(sidecars, dests):
@@ -98,17 +102,14 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
         # suffix for fmaps is magnitude1 & 2 and phasediff (i think)
         # suffix for funcs is _bold
         if scan_type == 'B0map':
-            fmap_args = [('part-mag', 'magnitude1'), 
-                        ('part-mag', 'magnitude2'), 
-                        ('part-phase', 'phasediff')]  
+            fmap_args = ['magnitude1', 'magnitude2', 'phasediff']
             dests = []
             for fmap_arg in fmap_args:
                 # Compile the file stem (file name no extension)
                 write_file_stem = '_'.join([
                     subject_arg,
                     session_arg,
-                    fmap_arg[0],
-                    fmap_arg[1]])
+                    fmap_arg])
 
                 dests.append(write_path / Path(write_file_stem))
     
@@ -131,7 +132,6 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
 
                 dests.append(write_path / Path(write_file_stem))
 
-    print(niis)
     return dests
 
     
