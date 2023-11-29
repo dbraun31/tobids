@@ -25,7 +25,12 @@ class ValidateBasics:
         Confirms with user
         Returns sample size
         '''
-        N = len(os.listdir(self.origin_dir))
+        # Import all first-level dirs
+        dirs = [d for d in os.listdir(self.origin_dir) if os.path.isdir(self.origin_dir/ Path(d))]
+
+        # Only keep dir if there's a number in it
+        dirs = [d for d in dirs if any(char.isdigit() for char in d)]
+        N = len(dirs)
         response = ''
 
         while response not in ['y', 'n']:
@@ -45,7 +50,11 @@ class ValidateBasics:
         Quits the script if any are missing (but this should be updated to just
         drop the subject)
         '''
-        subject_dirs = os.listdir(self.origin_dir)
+        # Import all first-level dirs
+        dirs = [d for d in os.listdir(self.origin_dir) if os.path.isdir(self.origin_dir/ Path(d))]
+
+        # Only keep dir if there's a number in it
+        subject_dirs = [d for d in dirs if any(char.isdigit() for char in d)]
 
         for subject_dir in subject_dirs:
             subject = subject_dir.split('/')[-1]

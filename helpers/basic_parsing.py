@@ -89,13 +89,17 @@ def parse_subjects(origin_path):
     err = "Couldn't find subject numbers in first level of origin path. Make sure origin directory is structured such that subject directories are in the first level."
 
     # Import all first-level dirs
-    dirs = os.listdir(origin_path)
-    # keep only numeric portion of dirs
+    dirs = [d for d in os.listdir(origin_path) if os.path.isdir(origin_path/ Path(d))]
+
+    # Only keep dir if there's a number in it
+    dirs = [d for d in dirs if any(char.isdigit() for char in d)]
+
     subjects = []
 
     if not dirs:
         raise ValueError(err)
 
+    # Keep only numeric portion of dirs
     for dir_ in dirs:
         subject = {}
         subject_number = ''.join([char for char in dir_ if char.isnumeric()]).zfill(3)
