@@ -139,6 +139,11 @@ any name.
 
 ## Release notes
 
+* **1.1.1** (2023-12-18)
+    * Option for more reliance on `mne_bids` for writing eeg files for more
+        robust and complete BIDS conversion (default is set to using
+        `mne_bids`).
+
 * **1.1.0** (2023-11-29)
     * Support for NIFTI fMRI (`.nii`) added. Compresses to `.nii.gz`.
     * Queries the user as to whether to overwrite existing data in the BIDS
