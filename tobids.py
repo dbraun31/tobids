@@ -43,6 +43,8 @@ dataset_description.json) with suffix _BIDS
 
 # Decide whether to write raw data to .edf or just copy it as is
 make_edf = False
+# Rely on mne_bids for writing eeg data and meta data?
+use_mne_bids = True
 
 if __name__ == '__main__':
 
@@ -73,17 +75,18 @@ if __name__ == '__main__':
     # Determine whether there is eeg and / or fmri data
     eeg, fmri = parse_data_type(origin_path)
 
-
     # Set up basic directory structure
     make_skeleton(subjects, dest_path, eeg, fmri)
 
-    # INITIALIZE TOP LEVEL FILES #
-    # -- Compile dataset description
-    with open(dest_path / Path('dataset_description.json'), 'w') as ff:
-        json.dump(dataset_description, ff, sort_keys=False, indent=4)
+    # mne_bids will make these top level files
+    if not use_mne_bids:
+        # INITIALIZE TOP LEVEL FILES #
+        # -- Compile dataset description
+        with open(dest_path / Path('dataset_description.json'), 'w') as ff:
+            json.dump(dataset_description, ff, sort_keys=False, indent=4)
 
-    # -- Initialize a README
-    create_readme(dest_path, dataset_description)
+        # -- Initialize a README
+        create_readme(dest_path, dataset_description)
 
     # Init progress bar
     progress_bar = configure_progress_bar(origin_path)
@@ -120,8 +123,10 @@ if __name__ == '__main__':
                           write_path / Path('eeg'), 
                           make_edf,
                           overwrite,
+                          use_mne_bids,
                           progress_bar)
 
+            # dev
             if fmri:
                 # Get root fmri dir 
                 # (the one with all the fmri dirs from the scan nested inside)
