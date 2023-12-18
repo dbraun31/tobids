@@ -9,11 +9,12 @@ from helpers.modality_specific import (
     get_channels_tsv
 )
 import mne
+import mne_bids
 
 ## still need all the imports =(
 
 
-def write_eeg(eeg_files, write_path, make_edf, overwrite, progress_bar):
+def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress_bar):
     '''
     Takes as input list of *.eeg files for one subject / session
     And the start of the write path (dest/sub-<>/ses-<>/eeg)
@@ -42,24 +43,70 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, progress_bar):
             write_filename = '_'.join([subject, session, task, run])
             write_stem = write_path / Path(write_filename)
 
-            # Start writing files
+            # Load raw data
             raw = _load_raw_brainvision(read_path)
-            _make_bids_data(read_path, 
-                            write_stem, 
-                            raw, 
-                            make_edf,
-                            overwrite,
-                            progress_bar)
 
-            # Compile and write eeg metadata
-            eeg_json = get_eeg_json(task_name, raw)
-            _write_file(eeg_json, write_stem, 'eeg', '.json')
-            channels_tsv = get_channels_tsv(raw) 
-            _write_file(channels_tsv, write_stem, 'channels', '.tsv')
+            # Use mne_bids to write?
+            if use_mne_bids:
+                write_path_mne = Path(write_path.parts[0])
+                if write_path.parts[1] == 'rawdata':
+                    write_path_mne = write_path_mne / Path(write_path.parts[1])
+
+                _make_mne_bids_data(raw,
+                                    write_path_mne,
+                                    subject=_get_number(subject),
+                                    session=_get_number(session),
+                                    task=task_name,
+                                    run=_get_number(run),
+                                    overwrite=overwrite,
+                                    progress_bar=progress_bar)
+            else:
+                _make_bids_data(read_path, 
+                                write_stem, 
+                                raw, 
+                                make_edf,
+                                overwrite,
+                                progress_bar)
+
+                # Compile and write eeg metadata
+                eeg_json = get_eeg_json(task_name, raw)
+                _write_file(eeg_json, write_stem, 'eeg', '.json')
+                channels_tsv = get_channels_tsv(raw) 
+                _write_file(channels_tsv, write_stem, 'channels', '.tsv')
 
 
 
 ## INTERNAL UTILITIES ##
+
+def _make_mne_bids_data(raw, write_path, subject, session, task, run,
+                        overwrite, progress_bar):
+    '''
+    Write a raw BrainVision eeg file to BIDS format using mne bids
+
+    PARAMETERS
+    ---------
+    raw (mne.Raw): Imported raw data object
+    write_path (str): The root directory to write data to
+                        Should include 'rawdata' dir
+    subject (str): Subject number (just the number)
+    session (str): Session number
+    task (str): Task name
+    run (str): Run number
+    overwrite (str): Whether to overwrite existing data
+    '''
+
+    events, event_id = mne.events_from_annotations(raw)
+    bids_path = mne_bids.BIDSPath(subject=subject,
+                                  session=session,
+                                  task=task,
+                                  run=run,
+                                  root=write_path)
+    mne_bids.write_raw_bids(raw, bids_path, events=events,
+                            event_id=event_id, overwrite=overwrite)
+    
+    progress_bar.update(1)
+
+
 
 def _sort_task_files(task_file):
     '''
@@ -99,6 +146,10 @@ def _load_raw_brainvision(read_path):
     raw = mne.io.read_raw_brainvision(str(read_path.parent) + '/temp.vhdr', 
                                       preload=False,
                                       verbose='error')
+
+    # Set the raw data source file as original file name
+    raw._init_kwargs['vhdr_fname'] = read_path.with_suffix('.vhdr')
+
     # Remove temporary vhdr
     os.remove(str(read_path.parent) + '/temp.vhdr')
     return raw
@@ -183,4 +234,10 @@ def _get_filestem(path):
         filename = filename.split('.')[0]
     return filename
 
+def _get_number(x):
+    '''
+    Takes in a str (x) in form (eg) 'sub-001'
+    Returns just the number
+    '''
+    return x.split('-')[-1]
 
