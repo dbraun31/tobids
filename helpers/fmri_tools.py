@@ -63,6 +63,9 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
         # Write nifti
         for nii, dest in zip(niis, dests):
             dest_path = dest.with_suffix('.nii.gz') 
+            # Make dir
+            if not os.path.exists(dest_path.parent):
+                os.makedirs(dest_path.parent)
             # Handle overwriting
             if not overwrite and not os.path.exists(dest_path):
                 source_img = nib.load(nii)

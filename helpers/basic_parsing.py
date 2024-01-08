@@ -115,9 +115,9 @@ def parse_subjects(origin_path):
     return sorted(subjects, key = lambda x: x['number'])
 
 
-def parse_data_type(origin_path):
+def parse_data_type(seek_path):
     '''
-    Takes as input origin path
+    Takes as input seek path
     returns a boolean tuple indicating whether there is EEG and fMRI data
     present, respectively
     '''
@@ -125,9 +125,9 @@ def parse_data_type(origin_path):
     eeg = False
     fmri = False
 
-    if glob(origin_path.stem + '/**/*.eeg', recursive=True):
+    if glob(str(seek_path) + '/**/*.eeg', recursive=True):
         eeg = True
-    if glob(origin_path.stem + '/**/*.nii', recursive=True):
+    if glob(str(seek_path) + '/**/*.nii', recursive=True):
         fmri = True
 
     return (eeg, fmri)

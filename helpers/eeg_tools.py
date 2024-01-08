@@ -95,14 +95,17 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
     overwrite (str): Whether to overwrite existing data
     '''
 
-    events, event_id = mne.events_from_annotations(raw)
+    events, event_id = mne.events_from_annotations(raw, verbose='ERROR')
     bids_path = mne_bids.BIDSPath(subject=subject,
                                   session=session,
                                   task=task,
                                   run=run,
                                   root=write_path)
-    mne_bids.write_raw_bids(raw, bids_path, events=events,
-                            event_id=event_id, overwrite=overwrite)
+
+    if not os.path.exists(bids_path) or overwrite:
+        mne_bids.write_raw_bids(raw, bids_path, events=events,
+                                event_id=event_id, overwrite=overwrite,
+                                verbose='ERROR')
     
     progress_bar.update(1)
 

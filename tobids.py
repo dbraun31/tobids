@@ -72,12 +72,6 @@ if __name__ == '__main__':
         # sessions is a dict with key session number and value as path
     subjects = parse_subjects(origin_path)
 
-    # Determine whether there is eeg and / or fmri data
-    eeg, fmri = parse_data_type(origin_path)
-
-    # Set up basic directory structure
-    make_skeleton(subjects, dest_path, eeg, fmri)
-
     # mne_bids will make these top level files
     if not use_mne_bids:
         # INITIALIZE TOP LEVEL FILES #
@@ -114,8 +108,11 @@ if __name__ == '__main__':
             session_arg = Path('ses-' + session)
             write_path = dest_path / subject_arg / session_arg
 
+            # Determine whether there is eeg and / or fmri data
+            eeg, fmri = parse_data_type(seek_path)
 
             if eeg:
+                print('Writing EEG data')
                 # Get all *.eeg files for that subject/session
                 eeg_files = glob(str(seek_path) + '/**/*.eeg', recursive=True)
                 eeg_files = [Path(x) for x in eeg_files]
@@ -128,6 +125,7 @@ if __name__ == '__main__':
 
             # dev
             if fmri:
+                print('Writing fMRI data')
                 # Get root fmri dir 
                 # (the one with all the fmri dirs from the scan nested inside)
                 fmri_root = glob(str(seek_path) + '/**/*.nii', recursive=True)
