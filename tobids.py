@@ -123,7 +123,6 @@ if __name__ == '__main__':
                           use_mne_bids,
                           progress_bar)
 
-            # dev
             if fmri:
                 print('Writing fMRI data')
                 # Get root fmri dir 

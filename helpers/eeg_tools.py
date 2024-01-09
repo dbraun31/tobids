@@ -20,17 +20,22 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
     And the start of the write path (dest/sub-<>/ses-<>/eeg)
     '''
 
+
     # Get list of task names
     tasks = list(set([x.parent.name for x in eeg_files]))
     
     for task_name in tasks:
         # Keep only relevant files
-        task_files = [x for x in eeg_files if task_name in str(x)]
+        task_files = [x for x in eeg_files if str(x.parent.name).lower() == task_name.lower()]
+
         # Sort them by run
         if len(task_files) > 1:
-            task_files = sorted(task_files, key=_sort_task_files)
+            task_files = sorted(task_files, key=_get_run_number)
+            runs = [_get_run_number(file) for file in task_files]
+        else:
+            runs = [1]
 
-        for run, read_path in enumerate(task_files, start=1):
+        for run, read_path in zip(runs, task_files):
             # Build write file name
             subject = write_path.parent.parent.name
             session = write_path.parent.name
@@ -43,6 +48,9 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
             write_filename = '_'.join([subject, session, task, run])
             write_stem = write_path / Path(write_filename)
 
+            # Make corrected vhdr with original vhdr filename
+            # Rename old one to .bak
+            _make_temp_vhdr(read_path)
             # Load raw data
             raw = _load_raw_brainvision(read_path)
 
@@ -74,9 +82,10 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
                 channels_tsv = get_channels_tsv(raw) 
                 _write_file(channels_tsv, write_stem, 'channels', '.tsv')
 
+            # Rename original vhdr to it's original extension
+            _restore_vhdr(read_path)
 
 
-## INTERNAL UTILITIES ##
 
 def _make_mne_bids_data(raw, write_path, subject, session, task, run,
                         overwrite, progress_bar):
@@ -102,7 +111,13 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
                                   run=run,
                                   root=write_path)
 
-    if not os.path.exists(bids_path) or overwrite:
+    write = 0
+    if not os.path.exists(bids_path):
+        write = 1
+    elif overwrite:
+        write = 1
+
+    if write:
         mne_bids.write_raw_bids(raw, bids_path, events=events,
                                 event_id=event_id, overwrite=overwrite,
                                 verbose='ERROR')
@@ -111,13 +126,14 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
 
 
 
-def _sort_task_files(task_file):
+def _get_run_number(task_file):
     '''
     Input one .eeg file
     Returns the last digits in the string
     (used as a key for sorting)
     does a smart sort (ie, handles one and two digits appropriately)
     '''
+    # Splits file name (no extension) and reverses it
     s = task_file.stem.rsplit('_', -1)[::-1]
     for e in s:
         try:
@@ -128,15 +144,41 @@ def _sort_task_files(task_file):
     raise ValueError('EEG files need a run number somewhere in the file name')
 
 
-def _load_raw_brainvision(read_path):
+def _get_task_files(eeg_files, task_name):
     '''
-    Takes in full read path as Path object
-    Returns the raw data as mne object
+    Takes as input 
+        list of .eeg files as pathlib.Path objects
+        the task name as string
+    Returns only those eeg files that match the task name
+    *assumes task is separated by _ in file name and matches exactly parent
+    directory name (case insensitive)*
     '''
 
-    read_stem = read_path.parent / read_path.stem
-    with open(str(read_stem) + '.vhdr', 'r') as old_file:
-        with open(str(read_path.parent) + '/temp.vhdr', 'w') as new_file:
+    out = []
+
+    for eeg_file in eeg_files:
+        params = eeg_file.stem.rsplit('_')
+        for param in params:
+            if param.lower() == task_name.lower():
+                out.append(eeg_file)
+    if not out:
+        raise ValueError('Cannot parse task from EEG file name and match to directory name {}'.format(eeg_files))
+
+    return out
+
+
+
+def _make_temp_vhdr(read_path):
+    '''
+    Takes in full read path (ie, path to file and extension) of the .eeg
+    file
+    Returns a corrected vhdr file with the original name
+    Renames the original with extension '.bak'
+    '''
+    # Rename original
+    shutil.copy(read_path.with_suffix('.vhdr'), read_path.with_suffix('.bak'))
+    with open(read_path.with_suffix('.bak'), 'r') as old_file:
+        with open(read_path.with_suffix('.vhdr'), 'w') as new_file:
             for line in old_file:
                 if 'DataFile' in line:
                     line = 'DataFile={}'.format(str(read_path.stem) + '.eeg\n')
@@ -145,16 +187,31 @@ def _load_raw_brainvision(read_path):
                 new_file.write(line)
     new_file.close()
 
+def _restore_vhdr(read_path):
+    '''
+    Takes in full read path (ie, path to file and extension) of the .eeg
+    file
+    Takes the .bak (temp) vhdr and restores it to the original 
+    '''
+
+    shutil.copy(read_path.with_suffix('.bak'), read_path.with_suffix('.vhdr'))
+    os.remove(read_path.with_suffix('.bak'))
+
+
+
+
+
+def _load_raw_brainvision(read_path):
+    '''
+    Takes in full read path as Path object
+    Returns the raw data as mne object
+    '''
+
     # Load data
-    raw = mne.io.read_raw_brainvision(str(read_path.parent) + '/temp.vhdr', 
+    raw = mne.io.read_raw_brainvision(read_path.with_suffix('.vhdr'), 
                                       preload=False,
                                       verbose='error')
 
-    # Set the raw data source file as original file name
-    raw._init_kwargs['vhdr_fname'] = read_path.with_suffix('.vhdr')
-
-    # Remove temporary vhdr
-    os.remove(str(read_path.parent) + '/temp.vhdr')
     return raw
 
 def _make_bids_data(read_path, write_stem, raw, make_edf, overwrite, progress_bar):
@@ -194,6 +251,8 @@ def _make_bids_data(read_path, write_stem, raw, make_edf, overwrite, progress_ba
         for extension in extensions:
             source_file = str(read_path.parent / read_path.stem) + extension
             write_file = str(write_stem) + '_eeg' + extension
+            # i dont think this logic works
+            # if overwrite is true we should write...
             if not overwrite and not os.path.exists(write_file):
                 shutil.copy(source_file, write_file)
         # Update progress once per triad

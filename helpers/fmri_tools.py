@@ -67,7 +67,14 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
             if not os.path.exists(dest_path.parent):
                 os.makedirs(dest_path.parent)
             # Handle overwriting
-            if not overwrite and not os.path.exists(dest_path):
+            write = False
+            if os.path.exists(dest_path):
+                if overwrite:
+                    write = True
+            else:
+                write = True
+
+            if write:
                 source_img = nib.load(nii)
                 nib.save(source_img, dest_path)
             progress_bar.update(1)
