@@ -66,6 +66,11 @@ if __name__ == '__main__':
     vb.confirm_subject_count()
     vb.confirm_subject_data()
 
+    # Validate task names
+    all_eeg_files = [Path(x) for x in glob('**/*.eeg')]
+    task_names = [x.parent.name for x in all_eeg_files]
+    validate_task_names(task_names)
+
     # Get subject info
     # list of dict (each subject is element) with keys
         # number, path, sessions

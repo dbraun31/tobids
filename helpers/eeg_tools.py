@@ -24,9 +24,6 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
     # Get list of task names
     tasks = list(set([x.parent.name for x in eeg_files]))
 
-    # Validate task names
-    validate_task_names(tasks)
-    
     for task_name in tasks:
         # Keep only relevant files
         task_files = [x for x in eeg_files if str(x.parent.name).lower() == task_name.lower()]
