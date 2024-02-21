@@ -108,8 +108,6 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
     '''
 
     events, event_id = mne.events_from_annotations(raw, verbose='ERROR')
-    print(subject)
-    print(task)
     bids_path = mne_bids.BIDSPath(subject=subject,
                                   session=session,
                                   task=task,
