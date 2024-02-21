@@ -139,6 +139,12 @@ any name.
 
 ## Release notes
 
+* **1.1.2** (2024-02-21)
+    * Added validation check for user to approve automatically inferred
+        task name(s)
+    * More intelligent session handling (particularly for when there is
+        only one session).
+
 * **1.1.1** (2023-12-18)
     * Option for more reliance on `mne_bids` for writing eeg files for more
         robust and complete BIDS conversion (default is set to using
