@@ -8,10 +8,10 @@ from helpers.modality_specific import (
     get_eeg_json,
     get_channels_tsv
 )
+from helpers.validations import validate_task_names
 import mne
 import mne_bids
 
-## still need all the imports =(
 
 
 def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress_bar):
@@ -23,6 +23,9 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
 
     # Get list of task names
     tasks = list(set([x.parent.name for x in eeg_files]))
+
+    # Validate task names
+    validate_task_names(tasks)
     
     for task_name in tasks:
         # Keep only relevant files
@@ -105,6 +108,8 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
     '''
 
     events, event_id = mne.events_from_annotations(raw, verbose='ERROR')
+    print(subject)
+    print(task)
     bids_path = mne_bids.BIDSPath(subject=subject,
                                   session=session,
                                   task=task,

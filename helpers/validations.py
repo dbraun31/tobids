@@ -106,3 +106,11 @@ def final_validation(dest_dir):
             print(file)
 
 
+def validate_task_names(tasks):
+    response = ''
+    while response != 'y':
+        response = input('\n\nAre these the task names: {}? (y/n)  '.format(set(tasks)))
+        response = response.strip().lower()
+        if response == 'n':
+            raise ValueError('\n\nCheck directory structure. Directories one level above *.eeg data need to be named according to the corresponding task. Aborting.')
+	
