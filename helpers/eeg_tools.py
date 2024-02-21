@@ -8,7 +8,6 @@ from helpers.modality_specific import (
     get_eeg_json,
     get_channels_tsv
 )
-from helpers.validations import validate_task_names
 import mne
 import mne_bids
 
@@ -105,11 +104,18 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
     '''
 
     events, event_id = mne.events_from_annotations(raw, verbose='ERROR')
-    bids_path = mne_bids.BIDSPath(subject=subject,
-                                  session=session,
-                                  task=task,
-                                  run=run,
-                                  root=write_path)
+
+    if session:
+        bids_path = mne_bids.BIDSPath(subject=subject,
+                                      session=session,
+                                      task=task,
+                                      run=run,
+                                      root=write_path)
+    else:
+        bids_path = mne_bids.BIDSPath(subject=subject,
+                                      task=task,
+                                      run=run,
+                                      root=write_path)
 
     write = 0
     if not os.path.exists(bids_path):
@@ -123,7 +129,6 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
                                 verbose='ERROR')
     
     progress_bar.update(1)
-
 
 
 def _get_run_number(task_file):

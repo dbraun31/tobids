@@ -106,7 +106,13 @@ def final_validation(dest_dir):
             print(file)
 
 
-def validate_task_names(tasks):
+def validate_task_names(subjects):
+    # Subjects comes in as list of dicts
+    subject_numbers = [x['number'] for x in subjects]
+    tasks = []
+    for subject in subject_numbers:
+        tasks += glob('**/{}/**/*.eeg'.format(subject), recursive=True)
+    tasks = [Path(x).parent.name for x in tasks]
     response = ''
     while response != 'y':
         response = input('\n\nAre these the task names: {}? (y/n)  '.format(set(tasks)))

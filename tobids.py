@@ -10,6 +10,7 @@ from pathlib import Path
 from mne_bids.path import BIDSPath
 # Import custom modules
 from helpers.validations import ValidateBasics, final_validation
+from helpers.validations import validate_task_names
 from helpers.modality_agnostic import get_dataset_description
 from helpers.modality_specific import (
         get_eeg_json, 
@@ -66,16 +67,15 @@ if __name__ == '__main__':
     vb.confirm_subject_count()
     vb.confirm_subject_data()
 
-    # Validate task names
-    all_eeg_files = [Path(x) for x in glob('**/*.eeg')]
-    task_names = [x.parent.name for x in all_eeg_files]
-    validate_task_names(task_names)
-
     # Get subject info
     # list of dict (each subject is element) with keys
         # number, path, sessions
         # sessions is a dict with key session number and value as path
     subjects = parse_subjects(origin_path)
+
+    # Check with user
+    validate_task_names(subjects)
+    
 
     # mne_bids will make these top level files
     if not use_mne_bids:
@@ -104,13 +104,15 @@ if __name__ == '__main__':
         for session in sessions:
             if sessions[0] == '-999':
                 session_path = Path('')
+                session_arg = Path('')
             else:
                 session_path = subject['sessions'][session]
+                session_arg = Path('ses-' + session)
 
             seek_path = origin_path / subject['path'] / session_path
             # Build write path
             subject_arg = Path('sub-' + subject['number'])
-            session_arg = Path('ses-' + session)
+
             write_path = dest_path / subject_arg / session_arg
 
             # Determine whether there is eeg and / or fmri data
