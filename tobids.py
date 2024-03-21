@@ -74,7 +74,7 @@ if __name__ == '__main__':
     subjects = parse_subjects(origin_path)
 
     # Check with user
-    validate_task_names(subjects)
+    validate_task_names(subjects, origin_path)
     
 
     # mne_bids will make these top level files
