@@ -6,6 +6,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from helpers.fmri_tools import get_fmri_root
 
 class ValidateBasics:
     '''
@@ -62,8 +63,9 @@ class ValidateBasics:
             eeg = glob(path + '/**/*.eeg', recursive=True)
             vhdr = glob(path + '/**/*.vhdr', recursive=True)
             vmrk = glob(path + '/**/*.vmrk', recursive=True)
-            if not eeg or not vhdr or not vmrk:
-                raise ValueError('Subject {} is missing one or more of the data files'.format(subject))
+            nii = glob(path + '/**/*.nii', recursive=True)
+            if not eeg and not vhdr and not vmrk and not nii:
+                raise ValueError('Subject {} has no eeg or fMRI data. Check source.'.format(subject))
 
         self.subject_data_present = 'Yes'
 
@@ -108,12 +110,31 @@ def final_validation(dest_dir):
 
 def validate_task_names(subjects, origin_path):
     # Subjects comes in as list of dicts
-    subject_numbers = [x['number'] for x in subjects]
+
+    #  -- Try to first infer tasks from eeg data -- #
+
     tasks = []
     tasks = glob('{}/**/*.eeg'.format(origin_path), recursive=True)
     #for subject in subject_numbers:
         #tasks += glob('**/{}/**/*.eeg'.format(subject), recursive=True)
     tasks = [Path(x).parent.name for x in tasks]
+
+    # -- If no eeg data, infer tasks from fmri data -- #
+    if not tasks:
+        subject_paths = [os.path.join(origin_path, x['path']) for x in subjects]
+        for subject_path in subject_paths:
+            fmri_root = get_fmri_root(subject_path)
+            # A whole thing to extract task names from BOLD dirs
+            bold_dirs = [x for x in os.listdir(fmri_root) if 'BOLD' in x] 
+            tasks = []
+            for bold_dir in bold_dirs:
+                arg_list = bold_dir.split('_')
+                tasks.append(arg_list[arg_list.index('BOLD') + 1])
+
+        if not tasks:
+            raise ValueError('Unable to infer task names.')
+
+
     response = ''
     while response != 'y':
         response = input('\n\nAre these the task names: {}? (y/n) '.format(str(set(tasks))))

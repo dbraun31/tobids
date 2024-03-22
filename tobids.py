@@ -28,7 +28,7 @@ from helpers.basic_parsing import (
 )
 from helpers.eeg_tools import write_eeg
 from helpers.mne_bids_mods import _write_dig_bids
-from helpers.fmri_tools import write_fmri
+from helpers.fmri_tools import (write_fmri, get_fmri_root)
 
 
 '''
@@ -134,9 +134,7 @@ if __name__ == '__main__':
                 print('Writing fMRI data')
                 # Get root fmri dir 
                 # (the one with all the fmri dirs from the scan nested inside)
-                fmri_root = glob(str(seek_path) + '/**/*.nii', recursive=True)
-                fmri_root = Path(fmri_root[0]).parent.parent.parent
-                
+                fmri_root = get_fmri_root(seek_path)
                 meta_info = {'subject': str(subject_arg), 'session': str(session_arg)}
                 write_fmri(fmri_root, write_path, meta_info, overwrite, progress_bar)
     

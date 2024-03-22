@@ -116,24 +116,42 @@ any name.
 
 **Assumptions:**
 
-* Directories containing all data for each subject need to be *one level
+* **Subject inference.** Directories containing all data for each subject need to be *one level
     under* the root directory (eg, `my_source_data/subject_01`). The
     subject directories just need a number somewhere in the directory name
     to be used as the subject label; otherwise the exact naming convention
-    doesn't matter.
-* If there are sessions, session directories need to be *one level under*
-    the subject directories (eg, `my_source_data/subject_01/session_01`).
-    Again, there just needs to be a number somewhere in the name of this
-    session directory. If there are no sessions, you can omit session
-    folders.
-* EEG data files are stored *one level under* a directory labeled according
-    to the task performed (eg,
+    doesn't matter. *This means no other directory should have a number in
+    its name and be one level under the root directory.*
+* **Session inference.** If there are sessions, session directories need to
+    be *one level under* the subject directories (eg,
+    `my_source_data/subject_01/session_01`).  There need to be the characters
+    'sess' (case insensitive) somewhere in the directory name. 'sess' can be a
+    segment of a longer word, so 'session' is fine. *This means that no other
+    directory two levels under the root directory can have the characters
+    'sess' **anywhere** in its name.* (which is probably not a smart
+    restriction and I should improve that to also look for numbers)
+* **Task inference** 
+    * **EEG.** For labeling tasks for EEG data, the program will
+    assume that EEG data files are stored *one level under* a directory
+    labeled according to the task performed (eg,
     `my_source_data/subject_01/.../GradCPT/my_file_name.eeg`). The entire
-    name of this task directory is used as the "task" argument in the
-    BIDS filenames.
-* Raw fMRI data are assumed to have extension `.nii` and need to be located
-    *two levels below* the main fMRI directory containing the different
-    scans.
+    name of this task directory is used as the "task" argument in the BIDS
+    filenames. 
+    * **fMRI.** For labeling tasks for fMRI data, the program will look for
+    the word immediately following the word "BOLD" in the directory name
+    where all the scans are (ie, fmri root). For example,
+    given the directory `12_BOLD_ExperienceSampling_run1`, the program will
+    infer the task name to be `ExperienceSampling`.
+* **fMRI root inference.** The fMRI root is the directory containing
+    subdirectories for all scans within a session. The program will search
+    within a single session for a subject for a directory containing
+    subdirectories that contain the following keywords: `BOLD`, `AAHScout`,
+    `Localizer`, and `B0map` (case sensitive). The program needs to be able
+    to find at least one subdirectory for each of these keywords, and all
+    subdirectories that are found need to contain at least one `.nii` file.
+    The program will search for one and only one fMRI root directory. **In
+    other words, make sure all scans for a single session are in one
+    directory.**
 
 
 
@@ -167,7 +185,8 @@ any name.
 
 ### Still to do
 
-* More sophisticated command-line argument parsing.
+* Make the tool more amenable for subject-by-subject conversion.
+* Make session inference look for digits.
 * Figure out the coordinate system and how to produce `*_coordsystem.json`.
 * How to reference the `*.bvef` file for making a montage. Might need to
     have user point to it.

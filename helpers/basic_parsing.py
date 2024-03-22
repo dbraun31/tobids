@@ -62,7 +62,7 @@ def has_sessions(subject_path):
 
     subdirs = os.listdir(subject_path)
 
-    sessions = [x for x in subdirs if 'session' in x.lower()]
+    sessions = [x for x in subdirs if 'sess' in x.lower()]
     out = {}
 
     if sessions:

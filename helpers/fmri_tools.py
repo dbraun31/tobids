@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import copy
 from tqdm import tqdm
+from glob import glob
+import os
 
 def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
     '''
@@ -25,16 +27,23 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
     '''
     
     # Get session number
-    session = int(meta_info['session'].split('-')[1])
+    if meta_info['session'] != '.':
+        session = int(meta_info['session'].split('-')[1])
+    else:
+        meta_info['session'] = ''
+        session = ''
 
     # Iterate over scan types
     for scan_type in ['T1w', 'B0map', 'BOLD']:
 
         # There's only one structural scan (session 1)
-        if scan_type == 'T1w' and session > 1:
+        if scan_type == 'T1w' and session and session > 1:
             continue
 
         # Extract relevant info
+        # key is eg '_T1w_'
+        # bids name ['fmap', 'func', 'anat']
+        # Threshold is for validating number of expected scans
         key, threshold, bids_name = _get_scan_types(scan_type)
 
         # Find the appropriate dir
@@ -94,18 +103,20 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
     write_path = write_start / Path(bids_name)
     subject_arg = meta_info['subject']
     session_arg = meta_info['session']
+    prefix = [subject_arg, session_arg]
+    prefix = [x for x in prefix if x]
 
     # If anat
-    if len(niis) == 1:
-        write_file_stem = '_'.join([
-            subject_arg,
-            session_arg,
-            'T1w'])
+    if 'T1w' in niis[0].name:
+        print('PROCESSING T1W')
+        args = prefix + ['T1w']
+        write_file_stem = '_'.join(args)
         dests = [write_path / Path(write_file_stem)]
 
     # If func or fmap
     # Sort niis and jsons by acquisition number
-    elif len(niis) > 1:
+    else:
+        print('PROCESSING {}'.format(scan_type))
         niis = sorted(niis, key = _get_scan_number)
         sidecars = sorted(sidecars, key = _get_scan_number)
 
@@ -116,11 +127,8 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
             dests = []
             for fmap_arg in fmap_args:
                 # Compile the file stem (file name no extension)
-                write_file_stem = '_'.join([
-                    subject_arg,
-                    session_arg,
-                    fmap_arg])
-
+                args = prefix + [fmap_arg]
+                write_file_stem = '_'.join(args)
                 dests.append(write_path / Path(write_file_stem))
     
         if scan_type == 'BOLD':
@@ -128,17 +136,18 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
             run = 1
             last_task = ''
             for nii in niis:
-                task = nii.parent.parent.name.split('_')[-1]
+                # Assumes task name is the parameter after BOLD
+                arg_list = nii.parent.parent.name.split('_')
+                task = arg_list[arg_list.index('BOLD')+1]
+
                 if task == last_task:
                     run += 1
                 last_task = copy.deepcopy(task)
 
-                write_file_stem = '_'.join([
-                    subject_arg,
-                    session_arg,
-                    'task-{}'.format(task),
-                    'run-{}'.format(run),
-                    'bold'])
+                args = prefix + ['task-{}'.format(task),
+                                 'run-{}'.format(run),
+                                 'bold']
+                write_file_stem = '_'.join(args)
 
                 dests.append(write_path / Path(write_file_stem))
 
@@ -190,3 +199,34 @@ def _error_check(l, threshold, fmri_root, scan):
     if threshold is not None:
         if len(l) > threshold:
             raise ValueError('{} scan directory is ambiguous {} {}'.format(scan, fmri_root, l))
+
+def get_fmri_root(seek_path):
+    # Returns the fmri root directory 
+    # Seek path is origin_path / subject / session
+    # Raises an error if it doesn't find exactly one dir
+
+    keywords = ['BOLD', 'AAHScout', 'Localizer', 'B0map']
+
+    founds = []
+
+    for dirpath, dirnames, filenames in os.walk(seek_path):
+        hits = 0
+        for keyword in keywords:
+            if any(keyword in x for x in dirnames):
+                hits += 1
+        if hits == len(keywords):
+            founds.append(dirpath)
+
+    if len(founds) != 1:
+        raise ValueError('Unable to infer fMRI root directory with scans.')
+
+    for item in os.listdir(founds[0]):
+        look_dir = os.path.join(founds[0], item)
+        if os.path.isdir(look_dir) and 'BOLD' in item:
+            niis = glob(look_dir + '/**/*.nii', recursive=True)
+            if not niis:
+                raise ValueError('Unable to infer fMRI root directory with scans.')
+
+
+    return founds[0]
+
