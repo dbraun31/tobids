@@ -109,6 +109,10 @@ files, `tobids` will run the `bids-validator` tool created by the [BIDS team](ht
 
 ## Source data format
 
+In general, it's best to include in the source data folder *only* the
+minimum amount of data needed to perform the conversion. This makes things
+less complicated for the tool and eases the burden of transfering data.
+
 `tobids` makes several assumptions about the structure of the source data
 that the user points to. The top-level directory that contains this data
 will be referred to as the *root directory*. The root directory can have
@@ -152,6 +156,10 @@ any name.
     The program will search for one and only one fMRI root directory. **In
     other words, make sure all scans for a single session are in one
     directory.**
+* For a single subject's session, there should be exactly 1 T1w `.nii`
+    file and 3 B0map `.nii` files. There are no restrictions on how many
+    functional `.nii` files there can be. 
+
 
 
 

@@ -218,7 +218,7 @@ def get_fmri_root(seek_path):
             founds.append(dirpath)
 
     if len(founds) != 1:
-        raise ValueError('Unable to infer fMRI root directory. Expected to find 1 root directory but found {}'.format(len(founds))
+        raise ValueError('Unable to infer fMRI root directory. Expected to find 1 root directory but found {}'.format(len(founds)))
 
     for item in os.listdir(founds[0]):
         look_dir = os.path.join(founds[0], item)
