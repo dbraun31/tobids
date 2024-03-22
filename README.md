@@ -144,7 +144,7 @@ any name.
     infer the task name to be `ExperienceSampling`.
 * **fMRI root inference.** The fMRI root is the directory containing
     subdirectories for all scans within a session. The program will search
-    within a single session for a subject for a directory containing
+    within a single subject's session for a directory containing
     subdirectories that contain the following keywords: `BOLD`, `AAHScout`,
     `Localizer`, and `B0map` (case sensitive). The program needs to be able
     to find at least one subdirectory for each of these keywords, and all
@@ -156,6 +156,11 @@ any name.
 
 
 ## Release notes
+
+* **1.2.0** (2024-03-22)
+    * Much more robust task and fmri root inference.
+    * Fixed small issues that came up when converting only fMRI data (ie,
+        no eeg)
 
 * **1.1.2** (2024-02-21)
     * Added validation check for user to approve automatically inferred

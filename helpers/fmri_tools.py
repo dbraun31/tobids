@@ -218,14 +218,14 @@ def get_fmri_root(seek_path):
             founds.append(dirpath)
 
     if len(founds) != 1:
-        raise ValueError('Unable to infer fMRI root directory with scans.')
+        raise ValueError('Unable to infer fMRI root directory. Expected to find 1 root directory but found {}'.format(len(founds))
 
     for item in os.listdir(founds[0]):
         look_dir = os.path.join(founds[0], item)
         if os.path.isdir(look_dir) and 'BOLD' in item:
             niis = glob(look_dir + '/**/*.nii', recursive=True)
             if not niis:
-                raise ValueError('Unable to infer fMRI root directory with scans.')
+                raise ValueError('Unable to infer fMRI root directory. No .nii file in {}'.format(look_dir))
 
 
     return founds[0]
