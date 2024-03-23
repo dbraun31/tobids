@@ -11,13 +11,11 @@ from mne_bids.path import BIDSPath
 # Import custom modules
 from helpers.validations import ValidateBasics, final_validation
 from helpers.validations import validate_task_names
-from helpers.modality_agnostic import get_dataset_description
 from helpers.modality_specific import (
         get_eeg_json, 
         get_channels_tsv,
         get_electrodes_tsv
 )
-from helpers.make_readme import initialize_readme, create_readme
 from helpers.basic_parsing import (
         parse_command_line, 
         parse_subjects, 
@@ -29,6 +27,7 @@ from helpers.basic_parsing import (
 from helpers.eeg_tools import write_eeg
 from helpers.mne_bids_mods import _write_dig_bids
 from helpers.fmri_tools import (write_fmri, get_fmri_root)
+from helpers.metadata import make_metadata
 
 
 '''
@@ -49,11 +48,8 @@ use_mne_bids = True
 
 if __name__ == '__main__':
 
-    # Import dataset description
-    dataset_description = get_dataset_description()
-    
     # Parse user command line input
-    origin_path, dest_path = parse_command_line(sys.argv[1:], dataset_description)
+    origin_path, dest_path = parse_command_line(sys.argv[1:])
 
     # Put everthing inside 'rawdata'
     dest_path = dest_path / Path('rawdata')
@@ -76,17 +72,6 @@ if __name__ == '__main__':
     # Check with user
     validate_task_names(subjects, origin_path)
     
-
-    # mne_bids will make these top level files
-    if not use_mne_bids:
-        # INITIALIZE TOP LEVEL FILES #
-        # -- Compile dataset description
-        with open(dest_path / Path('dataset_description.json'), 'w') as ff:
-            json.dump(dataset_description, ff, sort_keys=False, indent=4)
-
-        # -- Initialize a README
-        create_readme(dest_path, dataset_description)
-
     # Init progress bar
     progress_bar = configure_progress_bar(origin_path)
 
@@ -138,6 +123,10 @@ if __name__ == '__main__':
                 meta_info = {'subject': str(subject_arg), 'session': str(session_arg)}
                 write_fmri(fmri_root, write_path, meta_info, overwrite, progress_bar)
     
+
+    # Make metadata if it doesn't exist
+    make_metadata(dest_path)
+
     # Validate final directory
     final_validation(dest_path)
 

@@ -1,12 +1,11 @@
 import sys
 from pathlib import Path
-from helpers.modality_agnostic import get_dataset_description
 import os
 from glob import glob
 import re
 from tqdm import tqdm
 
-def parse_command_line(args, dataset_description):
+def parse_command_line(args):
     '''
     Takes as input command line arguments as a list of strings
     Ensures origin path is specified and valid
@@ -25,9 +24,8 @@ def parse_command_line(args, dataset_description):
 
     # If no destination path is provided
     else:
-        # infer one from the dataset name
-        prefix = re.sub(r'[^\w]', '', dataset_description['Name'])
-        dest_path = Path('_'.join([prefix, 'BIDS_data']))
+        # call it BIDS_data
+        dest_path = 'BIDS_data'
 
     # Ensure the origin directory exists
     if not os.path.exists(origin_path):
