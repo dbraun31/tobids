@@ -124,6 +124,8 @@ if __name__ == '__main__':
                 write_fmri(fmri_root, write_path, meta_info, overwrite, progress_bar)
     
 
+    # Stick behavioral data processing around here
+
     # Make metadata if it doesn't exist
     make_metadata(dest_path)
 

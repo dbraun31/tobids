@@ -145,7 +145,7 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
                 last_task = copy.deepcopy(task)
 
                 args = prefix + ['task-{}'.format(task),
-                                 'run-{}'.format(run),
+                                 'run-{}'.format(str(run).zfill(3)),
                                  'bold']
                 write_file_stem = '_'.join(args)
 
