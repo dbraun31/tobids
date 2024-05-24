@@ -22,6 +22,8 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
 
     # Get list of task names
     tasks = list(set([x.parent.name for x in eeg_files]))
+    # Standardize ES vs. ExperienceSampling
+    tasks = ['ExperienceSampling' if x=='ES' else x for x in tasks]
 
     for task_name in tasks:
         # Keep only relevant files

@@ -93,9 +93,8 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
                 write = True
 
             if write:
-                shutil.copy(nii, dest_path)
-                #source_img = nib.load(nii)
-                #nib.save(source_img, dest_path)
+                source_img = nib.load(nii)
+                nib.save(source_img, dest_path)
             progress_bar.update(1)
 
         # Write json
@@ -146,7 +145,12 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
             for nii in niis:
                 # Assumes task name is the parameter after BOLD
                 arg_list = nii.parent.parent.name.split('_')
-                task = arg_list[arg_list.index('BOLD')+1]
+                # cant assume _ splitting will perfectly 
+                # isolate the word BOLD
+                idx = [i for i, e in enumerate(arg_list) if 'BOLD' in e][0]
+                task = arg_list[idx+1]
+                # Standardize ES vs. ExperienceSampling
+                task = 'ExperienceSampling' if task == 'ES' else task
 
                 if task == last_task:
                     run += 1
@@ -183,9 +187,11 @@ def _get_scan_number(file):
 
 
 def _get_scan_types(scan_type):
+    # Cant assume key words (ie, BOLD) 
+    # will be surrounded by underscores
     out = {'T1w': {}, 'B0map': {}, 'BOLD': {}}
 
-    out['T1w']['key'] = '_T1w_'
+    out['T1w']['key'] = 'T1w'
     out['T1w']['threshold'] = 1 
     out['T1w']['bids_name'] = 'anat'
 
@@ -193,7 +199,7 @@ def _get_scan_types(scan_type):
     out['B0map']['threshold'] = 3
     out['B0map']['bids_name'] = 'fmap'
 
-    out['BOLD']['key'] = '_BOLD_'
+    out['BOLD']['key'] = 'BOLD'
     out['BOLD']['threshold'] = None
     out['BOLD']['bids_name'] = 'func'
 

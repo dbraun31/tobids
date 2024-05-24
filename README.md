@@ -165,6 +165,10 @@ any name.
 
 ## Release notes
 
+* **1.2.1** (2024-05-24)
+    * Fixed substantial bug in fMRI file naming
+        * `niis` was being sorted *inside* `_get_dests()`
+
 * **1.2.0** (2024-03-22)
     * Much more robust task and fmri root inference.
     * Fixed small issues that came up when converting only fMRI data (ie,

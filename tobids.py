@@ -103,8 +103,7 @@ if __name__ == '__main__':
             # Determine whether there is eeg and / or fmri data
             eeg, fmri = parse_data_type(seek_path)
 
-            #if eeg:
-            if 1 > 2:
+            if eeg:
                 print('Writing EEG data')
                 # Get all *.eeg files for that subject/session
                 eeg_files = glob(str(seek_path) + '/**/*.eeg', recursive=True)
