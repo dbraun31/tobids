@@ -7,6 +7,7 @@ import copy
 from tqdm import tqdm
 from glob import glob
 import os
+import numpy as np
 
 def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
     '''
@@ -16,17 +17,21 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
     PARAMETERS
     -----------
     fmri_root: (pathlib.Path) path to dir containing all the fmri-scan dirs
+                eg, rt-fmri/sub-11/XNAT_fMRI
     write_start: (pathlib.Path) path to subject and session specific area in
                                bids dir
-                               eg, rawdata/sub-001/ses-001/
+                               eg, rt-fmri_BIDS/rawdata/sub-001/ses-001/
     meta_info: (dict) dict containing meta info on subject and session for
                       easy file naming
                       {'subject': 'sub-001', 'session': 'ses-001'}
+                      or
+                      {'subject': 'sub-001', 'session': '.'}
     overwrite: (boolean) whether to overwrite existing data (with same
                          name)
     '''
-    
+
     # Get session number
+    # Session is empty string if only one session
     if meta_info['session'] != '.':
         session = int(meta_info['session'].split('-')[1])
     else:
@@ -66,6 +71,10 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
         for l in [niis, sidecars]:
             _error_check(l, threshold, fmri_root, scan_type)
 
+        # Sort lists BEFORE computing destinations
+        niis = sorted(niis, key = _get_scan_number)
+        sidecars = sorted(sidecars, key = _get_scan_number)
+
         # Build write info
         dests = _get_dests(write_start, meta_info, scan_type, niis, sidecars)
 
@@ -84,8 +93,9 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
                 write = True
 
             if write:
-                source_img = nib.load(nii)
-                nib.save(source_img, dest_path)
+                shutil.copy(nii, dest_path)
+                #source_img = nib.load(nii)
+                #nib.save(source_img, dest_path)
             progress_bar.update(1)
 
         # Write json
@@ -117,8 +127,6 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
     # Sort niis and jsons by acquisition number
     else:
         print('PROCESSING {}'.format(scan_type))
-        niis = sorted(niis, key = _get_scan_number)
-        sidecars = sorted(sidecars, key = _get_scan_number)
 
         # suffix for fmaps is magnitude1 & 2 and phasediff (i think)
         # suffix for funcs is _bold
