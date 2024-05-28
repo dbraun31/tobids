@@ -26,7 +26,6 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
     And the start of the write path (dest/sub-<>/ses-<>/eeg)
     '''
 
-
     # Get list of task names
     tasks = list(set([x.parent.name for x in eeg_files]))
 
@@ -132,7 +131,7 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
 
     if write:
         mne_bids.write_raw_bids(raw, bids_path, events=events,
-                                event_id=event_id, overwrite=overwrite,
+                                event_id=event_id, overwrite=True,
                                 verbose='ERROR')
     
     progress_bar.update(1)
