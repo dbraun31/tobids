@@ -12,6 +12,13 @@ import mne
 import mne_bids
 
 
+def bandaid_es(task_name):
+    # Takes in task name as string
+    # If task name is ES then return ExperienceSampling
+    if task_name == 'ES':
+        return 'ExperienceSampling'
+    return task_name
+
 
 def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress_bar):
     '''
@@ -22,8 +29,6 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
 
     # Get list of task names
     tasks = list(set([x.parent.name for x in eeg_files]))
-    # Standardize ES vs. ExperienceSampling
-    tasks = ['ExperienceSampling' if x=='ES' else x for x in tasks]
 
     for task_name in tasks:
         # Keep only relevant files
@@ -44,7 +49,7 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
             if 'ses' not in str(session):
                 subject = write_path.parent.name
                 session = ''
-            task = 'task-{}'.format(task_name)
+            task = 'task-{}'.format(bandaid_es(task_name))
             run = 'run-{}'.format(str(run).zfill(3))
             write_filename = '_'.join([subject, session, task, run])
             write_stem = write_path / Path(write_filename)
@@ -65,7 +70,7 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
                                     write_path_mne,
                                     subject=_get_number(subject),
                                     session=_get_number(session),
-                                    task=task_name,
+                                    task=bandaid_es(task_name),
                                     run=_get_number(run),
                                     overwrite=overwrite,
                                     progress_bar=progress_bar)
