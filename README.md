@@ -165,6 +165,12 @@ any name.
 
 ## Release notes
 
+* **1.2.2** (2024-05-31)
+    * Fixed an issue with EEG events writing.
+        * Since we already have annotations, passing events to
+            `mne_bids.write_raw_bids` was causing redundant events to be
+            written.
+
 * **1.2.1** (2024-05-24)
     * Fixed substantial bug in fMRI file naming
         * `niis` was being sorted *inside* `_get_dests()`
