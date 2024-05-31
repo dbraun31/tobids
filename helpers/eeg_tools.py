@@ -1,5 +1,4 @@
-import sys
-import os
+import sys import os
 import json
 import shutil
 from pathlib import Path
@@ -109,7 +108,6 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
     overwrite (str): Whether to overwrite existing data
     '''
 
-    events, event_id = mne.events_from_annotations(raw, verbose='ERROR')
 
     if session:
         bids_path = mne_bids.BIDSPath(subject=subject,
@@ -130,9 +128,7 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
         write = 1
 
     if write:
-        mne_bids.write_raw_bids(raw, bids_path, events=events,
-                                event_id=event_id, overwrite=True,
-                                verbose='ERROR')
+        mne_bids.write_raw_bids(raw, bids_path, overwrite=True, verbose='ERROR')
     
     progress_bar.update(1)
 
