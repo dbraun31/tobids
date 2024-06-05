@@ -122,13 +122,16 @@ def parse_data_type(seek_path):
 
     eeg = False
     fmri = False
+    behav = False
 
     if glob(str(seek_path) + '/**/*.eeg', recursive=True):
         eeg = True
     if glob(str(seek_path) + '/**/*.nii', recursive=True):
         fmri = True
+    if glob(str(seek_path) + '/**/*.csv',recursive=True):
+        behav = True
 
-    return (eeg, fmri)
+    return (eeg, fmri, behav)
 
 def make_skeleton(subjects, dest_path, eeg, fmri):
     '''

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Dave Braun (2023)
+# Dave Braun (2024)
 import os
 import sys
 from tqdm import tqdm
@@ -28,6 +28,7 @@ from helpers.eeg_tools import write_eeg
 from helpers.mne_bids_mods import _write_dig_bids
 from helpers.fmri_tools import (write_fmri, get_fmri_root)
 from helpers.metadata import make_metadata
+from helpers.behav_tools import write_behav
 
 
 '''
@@ -101,7 +102,7 @@ if __name__ == '__main__':
             write_path = dest_path / subject_arg / session_arg
 
             # Determine whether there is eeg and / or fmri data
-            eeg, fmri = parse_data_type(seek_path)
+            eeg, fmri, behav = parse_data_type(seek_path)
 
             if eeg:
                 print('Writing EEG data')
@@ -115,7 +116,9 @@ if __name__ == '__main__':
                           use_mne_bids,
                           progress_bar)
 
-            if fmri:
+            # DEV
+            if 1 > 2:
+            #if fmri:
                 print('Writing fMRI data')
                 # Get root fmri dir 
                 # (the one with all the fmri dirs from the scan nested inside)
@@ -123,8 +126,15 @@ if __name__ == '__main__':
                 meta_info = {'subject': str(subject_arg), 'session': str(session_arg)}
                 write_fmri(fmri_root, write_path, meta_info, overwrite, progress_bar)
     
+            if behav:
+                behav_files = glob(str(seek_path) + '/**/*.csv', recursive=True)
+                behav_files = [Path(x) for x in behav_files]
+                write_behav(behav_files, 
+                            subject['number'], 
+                            session, 
+                            write_path / Path('behav'),
+                            overwrite)
 
-    # Stick behavioral data processing around here
 
     # Make metadata if it doesn't exist
     make_metadata(dest_path)
