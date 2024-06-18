@@ -116,9 +116,7 @@ if __name__ == '__main__':
                           use_mne_bids,
                           progress_bar)
 
-            # DEV
-            if 1 > 2:
-            #if fmri:
+            if fmri:
                 print('Writing fMRI data')
                 # Get root fmri dir 
                 # (the one with all the fmri dirs from the scan nested inside)
@@ -132,7 +130,7 @@ if __name__ == '__main__':
                 write_behav(behav_files, 
                             subject['number'], 
                             session, 
-                            write_path / Path('behav'),
+                            write_path / Path('beh'),
                             overwrite)
 
 

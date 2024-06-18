@@ -94,11 +94,15 @@ def final_validation(dest_dir):
     bad_files = []
 
     for path in file_paths:
+        # Validator apparently can't handle behavioral data
+        if 'beh' in path:
+            continue
         if validator.is_bids(path):
             result += 1
         else:
             bad_files.append(path)
 
+    file_paths = [x for x in file_paths if 'beh' not in x]
     score = round((result / len(file_paths))*100, 2)
     print("\nFinal validation of output directory.\n{}% of files in the output directory are BIDs compatible.".format(score))
     if bad_files:

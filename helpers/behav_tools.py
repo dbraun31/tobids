@@ -54,7 +54,7 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
             ess.append(file)
 
         else:
-            raise ValueError('Unable to infer task name for behavioral data.')
+            raise ValueError('Unable to infer task name for behavioral data.\nSubject: {}\nSession: {}\nInferred task name: {}\nFile: {}'.format(subject, session, inferred_task, file))
 
     # Sort, assumed by run number
     gradcpts = sorted(gradcpts)
@@ -74,9 +74,9 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
         task_arg='task-GradCPT'
         run_arg = 'run-{}'.format(str(run).zfill(3))
         out_file = Path('_'.join([subject_arg, session_arg, task_arg, run_arg,
-        'behav.tsv']))
+        'beh.tsv']))
 
-        if overwrite or not os.path.exists(out_path/out_file):
+        if overwrite or not os.path.exists(write_path/out_file):
             d = pd.read_csv(gradcpt, header=None, names=gradcpt_headers)
             d.to_csv(write_path / out_file, index=False, sep='\t')
 
@@ -89,9 +89,9 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
         task_arg='task-ExperienceSampling'
         run_arg = 'run-{}'.format(str(run).zfill(3))
         out_file = Path('_'.join([subject_arg, session_arg, task_arg, run_arg,
-        'behav.tsv']))
+        'beh.tsv']))
 
-        if overwrite or not os.path.exists(out_path/out_file):
+        if overwrite or not os.path.exists(write_path/out_file):
             d = pd.read_csv(es)
             d.to_csv(write_path / out_file, index=False, sep='\t')
 
