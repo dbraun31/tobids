@@ -104,6 +104,9 @@ if __name__ == '__main__':
             # Determine whether there is eeg and / or fmri data
             eeg, fmri, behav = parse_data_type(seek_path)
 
+            if behav and not fmri:
+                raise ValueError('tobids is only configured to process behavioral data when fMRI data are present.')
+
             if eeg:
                 print('Writing EEG data')
                 # Get all *.eeg files for that subject/session
@@ -130,7 +133,7 @@ if __name__ == '__main__':
                 write_behav(behav_files, 
                             subject['number'], 
                             session, 
-                            write_path / Path('beh'),
+                            write_path / Path('func'),
                             overwrite)
 
 

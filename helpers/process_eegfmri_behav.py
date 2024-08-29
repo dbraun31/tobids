@@ -9,7 +9,10 @@ import pandas as pd
 '''
 A script to help converting behavioral data from mat to csv
 it first crawls through the whole data dir looking for mat files
-    and moves them to a 'csv' folder
+    converts those with 'Data' in the name to csv
+        and moves them to a 'csv' folder
+    all others it moves to a 'mat' folder
+        needs to be converted with matlab
 then need to run a matlab script to convert
 then run this script again to disperse the csvs back into the original dirs
 '''
