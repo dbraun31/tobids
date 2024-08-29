@@ -128,6 +128,7 @@ if __name__ == '__main__':
                 write_fmri(fmri_root, write_path, meta_info, overwrite, progress_bar)
     
             if behav:
+                print('Wrigint behavioral data')
                 behav_files = glob(str(seek_path) + '/**/*.csv', recursive=True)
                 behav_files = [Path(x) for x in behav_files]
                 write_behav(behav_files, 

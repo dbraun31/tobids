@@ -117,7 +117,6 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
 
     # If anat
     if 'T1w' in niis[0].name:
-        print('PROCESSING T1W')
         args = prefix + ['T1w']
         write_file_stem = '_'.join(args)
         dests = [write_path / Path(write_file_stem)]
@@ -125,8 +124,6 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
     # If func or fmap
     # Sort niis and jsons by acquisition number
     else:
-        print('PROCESSING {}'.format(scan_type))
-
         # suffix for fmaps is magnitude1 & 2 and phasediff (i think)
         # suffix for funcs is _bold
         if scan_type == 'B0map':

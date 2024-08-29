@@ -149,15 +149,11 @@ def _reformat_es(d):
     BIDS
     '''
     
-    # temp 
-    in_file = '../data_conversion/csvs/EEG-fMRI_010_V1_02_06-May-2024_15_34.csv'
-    d = pd.read_csv(in_file)
-
     # Make probe count
     d.insert(0, 'probe_number', np.array(range(d.shape[0]))+1)
 
     d = pd.melt(d, id_vars=['probe_number'], var_name='variable', value_name='value')
-    s = dt['variable'].str.split(pat='_', n=1, expand=True)
+    s = d['variable'].str.split(pat='_', n=1, expand=True)
     d['item'] = s[0]
     d['metric'] = s[1]
     d.drop(columns=['variable'], inplace=True)
