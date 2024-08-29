@@ -12,4 +12,4 @@ EEG_FMRI/
 *.tsv
 *.nii.gz
 *.nii
-*.pyc
+**/*.pyc

@@ -5,8 +5,9 @@ to convert raw neuro data to [BIDS](https://bids.neuroimaging.io/) format.
 This tool provides a command-line interface for easy data
 conversion.
 
-`tobids` version 1.1.0 is currently compatible with Brainvision EEG data (`.eeg`,
-`.vhdr`, `.vmrk`) and NIFTI fMRI data (`.nii`).
+`tobids` version 1.3.0 is currently compatible with Brainvision EEG data (`.eeg`,
+`.vhdr`, `.vmrk`), NIFTI fMRI data (`.nii`), and behavioral data in comma
+separated values format (`.csv`).
 
 All questions can be directed to Dave Braun: dave.braun@drexel.edu
 
@@ -146,6 +147,12 @@ any name.
     where all the scans are (ie, fmri root). For example,
     given the directory `12_BOLD_ExperienceSampling_run1`, the program will
     infer the task name to be `ExperienceSampling`.
+    * **Behavioral**: 
+        * The program assumes *all* `.csv`s in the root directory are 
+            behavioral data! 
+        * The program assumes that the task associated with any `.csv`
+            behavioral file is the name of the directory that contains the
+            `.csv`.
 * **fMRI root inference.** The fMRI root is the directory containing
     subdirectories for all scans within a session. The program will search
     within a single subject's session for a directory containing
@@ -164,6 +171,20 @@ any name.
 
 
 ## Release notes
+
+* **1.3.0** (2024-08-29)
+    * Added BIDS compatible handling of behavioral data.
+        * Behavioral data in `.csv` get put in
+            `rawdata/sub-xxx/ses-xxx/func` as `*_events.tsv` along with a
+            sidecar json.
+        * As required, all `*_events.tsv` start with two columns `onset |
+            duration`.
+        * *Quirk:* Because our current experiments output all data as
+            `.mat`, and some of these files can't be read by Python, one
+            first has to run `helpers/process_eegfmri_behav.py` on the raw
+            data directory, then run `helpers/table_to_csv.m`, then run
+            `helpers/process_eegfmri_behav.py` again. Then the `tobids`
+            pipeline will work as expected.
 
 * **1.2.2** (2024-05-31)
     * Fixed an issue with EEG events writing.

@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 import shutil
+import numpy as np
 import pandas as pd
 from helpers.behav_task_data import (
     gradcpt_json,
@@ -22,7 +23,7 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
                 assume first parent is task name
     subject: subject number string with three zero pads
     session: session number string with three zero pads
-    write_path: dest/rawdata/sub-/sess-/behav as pathlib.Path
+    write_path: dest/rawdata/sub-/sess-/func as pathlib.Path
     overwrite: boolean indicating whether to overwrite existing data
 
     ------------
@@ -54,7 +55,7 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
             ess.append(file)
 
         else:
-            raise ValueError('Unable to infer task name for behavioral data.\nSubject: {}\nSession: {}\nInferred task name: {}\nFile: {}'.format(subject, session, inferred_task, file))
+            raise ValueError('Unable to infer task name for behavioral data.\nSubject: {}\nSession: {}\nInferred task name: {}\nFile: {}.\nDirectory containing data must match: "gradcpt" or "es" / "experiencesampling".'.format(subject, session, inferred_task, file))
 
     # Sort, assumed by run number
     gradcpts = sorted(gradcpts)
@@ -62,7 +63,7 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
 
     # Prep out dir
     subject_arg = 'sub-{}'.format(subject)
-    session_arg = 'sess-{}'.format(session)
+    session_arg = 'ses-{}'.format(session)
         
     if not os.path.exists(write_path):
         os.makedirs(write_path)
@@ -74,10 +75,14 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
         task_arg='task-GradCPT'
         run_arg = 'run-{}'.format(str(run).zfill(3))
         out_file = Path('_'.join([subject_arg, session_arg, task_arg, run_arg,
-        'beh.tsv']))
+        'events.tsv']))
 
         if overwrite or not os.path.exists(write_path/out_file):
             d = pd.read_csv(gradcpt, header=None, names=gradcpt_headers)
+
+            # Reformat data
+            d = _reformat_gradcpt(d)
+
             d.to_csv(write_path / out_file, index=False, sep='\t')
 
             with open(write_path / out_file.with_suffix('.json'), 'w') as file:
@@ -89,10 +94,14 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
         task_arg='task-ExperienceSampling'
         run_arg = 'run-{}'.format(str(run).zfill(3))
         out_file = Path('_'.join([subject_arg, session_arg, task_arg, run_arg,
-        'beh.tsv']))
+        'events.tsv']))
 
         if overwrite or not os.path.exists(write_path/out_file):
             d = pd.read_csv(es)
+
+            # Reformat data
+            d = _reformat_es(d)
+
             d.to_csv(write_path / out_file, index=False, sep='\t')
 
             with open(write_path / out_file.with_suffix('.json'), 'w') as file:
@@ -100,8 +109,61 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
             file.close()
 
 
+def _compute_diff(row):
+    '''
+    Compute difference between two values only if neither of them are zero.
+    '''
+    current_value = row['onset']
+    next_value = row['shifted']
+
+    if current_value != 0 and next_value != 0:
+        return next_value - current_value
+    return np.nan
+
+def _reformat_gradcpt(d):
+    '''
+    Take in raw GradCPT data and reformat to be compatible with BIDS
+    ie, Columns "onset" and "duration" should be in front, followed by the
+    rest.
+    '''
+
+    # Get remaining column names 
+    trail_cols = [x for x in d.columns if x != 'onset']
+
+    # Compute shift column
+    d['shifted'] = d['onset'].shift(-1)
+
+    # Take difference for non-zero values
+    d['duration'] = d.apply(_compute_diff, axis=1)
+    d.drop(columns=['shifted'], inplace=True)
+
+    # Move duration and onset to front
+    d = d[['onset', 'duration'] + trail_cols]
+
+    return d
 
 
+def _reformat_es(d):
+    '''
+    Take in raw ExperienceSampling data and reformat to be compatible with
+    BIDS
+    '''
+    
+    # Make probe count
+    d.insert(0, 'probe_number', np.array(range(d.shape[0]))+1)
+
+    d = pd.melt(d, id_vars=['probe_number'], var_name='variable', value_name='value')
+    s = d['variable'].str.split(pat='_', n=1, expand=True)
+    d['item'] = s[0]
+    d['metric'] = s[1]
+    d.drop(columns=['variable'], inplace=True)
+    d = d.pivot(index=['probe_number', 'item'], columns='metric',
+            values='value').reset_index()
+    d['duration'] = d['offset'] - d['onset']
+    trail_cols = [x for x in d.columns if x not in ['onset', 'duration']]
+    d = d[['onset', 'duration'] + trail_cols]
+
+    return d
         
 
 
