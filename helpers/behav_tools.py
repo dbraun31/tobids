@@ -63,7 +63,7 @@ def write_behav(behav_files, subject, session, write_path, overwrite):
 
     # Prep out dir
     subject_arg = 'sub-{}'.format(subject)
-    session_arg = 'sess-{}'.format(session)
+    session_arg = 'ses-{}'.format(session)
         
     if not os.path.exists(write_path):
         os.makedirs(write_path)
