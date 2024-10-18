@@ -13,3 +13,5 @@ EEG_FMRI/
 *.nii.gz
 *.nii
 **/*.pyc
+*.pyc
+scratch/
