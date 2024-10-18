@@ -12,17 +12,17 @@ from helpers.behav_task_data import (
 import json
 
 
-def write_behav(subject, session, seek_path, write_path, overwrite):
+def write_behav(behav_files, subject, session, write_path, overwrite):
     '''
     Nested within a subject and session loop
-    Moves each behavioral CSV file to its events.tsv BIDS dest in func
-        no current support when there's no fmri data
+    Moves each behavioral CSV file to its TSV BIDS dest
 
     PARAMETERS:
     ------------
+    behav_files: list of pathlib.Path pointing to full *.csv in source dir
+                assume first parent is task name
     subject: subject number string with three zero pads
     session: session number string with three zero pads
-    seek_path: subject/session/ as pathlib.Path
     write_path: dest/rawdata/sub-/sess-/func as pathlib.Path
     overwrite: boolean indicating whether to overwrite existing data
 
@@ -30,30 +30,12 @@ def write_behav(subject, session, seek_path, write_path, overwrite):
 
     ASSUMPTIONS:
     -----------
-    1. All GradCPT data have "*_city_mtn_*.mat" in the filename
-    2. All files named "ptbP.mat" are experience sampling data
-        2a. These files have subject and run number in their path like 
-            "sub-\d+" and "[Rr]un_\d+"
-    3. Any CSV files without "*_city_mtn_*.mat" in the name are experience
-        sampling data
-    4. The non ptbP.mat data will, when sorted, be in order of run number.
-    5. There will be either ptbP.mat or non *_city_mtn_*.csv experience
-        sampling data, not both
+    1. All behavioral data and *only* behavioral data are stored as CSVs 
+    2. CSVs are located directly inside a directory labeled with the
+        corresponding task name
+    3. CSVs are labeled such that when alphabetically sorted they will be
+        in order of run number.
     '''
-
-    # Nice to have 
-    sub_string = 'sub-{}'.format(subject)
-    ses_string = 'ses-{}'.format(session)
-
-    # Get paths
-    ptbps = glob(str(seek_path / Path('**/ptbP.mat')), recursive=True)
-    ESs = glob(str(seek_path / Path('**/*.csv')), recursive=True)
-    ESs = [x for x in ESs if '_city_mtn_' not in x]
-    gradcpts = glob(str(seek_path / Path('**/*_city_mtn_*.mat')), recursive=True)
-
-    # --- LEFT OFF HERE --- #
-
-
 
     es_tasks = ['es', 'experiencesampling']
 

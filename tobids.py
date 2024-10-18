@@ -129,13 +129,11 @@ if __name__ == '__main__':
     
             if behav:
                 print('Writing behavioral data')
-                behav_files = glob(str(seek_path) + '/**/*.csv', recursive=True)
-                behav_files = [Path(x) for x in behav_files]
-                write_behav(behav_files, 
-                            subject['number'], 
-                            session, 
-                            write_path / Path('func'),
-                            overwrite)
+                write_behav(subject['number'], 
+                    session, 
+                    seek_path,
+                    write_path / Path('func'),
+                    overwrite)
 
 
     # Make metadata if it doesn't exist
