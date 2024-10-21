@@ -130,9 +130,9 @@ if __name__ == '__main__':
             if behav:
                 print('Writing behavioral data')
                 write_behav(subject['number'], 
-                    session, 
+                    session, # Goes in as -999 if no sessions
                     seek_path,
-                    write_path / Path('func'),
+                    dest_path, # writedir/rawdata
                     overwrite)
 
 

@@ -5,15 +5,15 @@ ExperienceSampling data
 
 # GRAD CPT
 
-gradcpt_headers = ['cue', 'constant1', 'onset', 'stimulus_coherence',
+gradcpt_headers = ['cue', 'constant1', 'timestamp', 'stimulus_coherence',
                    'response_time', 'response', 'constant2']
 
 gradcpt_json = {
         'onset': {
-            'Description': 'Onset time in seconds'
+            'Description': 'Onset time in seconds when stimulus on current trial is at 1% coherence. Timelocked to fMRI scan start.'
             },
         'duration': {
-            'Description': 'Duration of trial in seconds'
+            'Description': 'Duration of trial in seconds.'
             },
         'cue': {
             'LongName': 'Cue image',
@@ -23,6 +23,9 @@ gradcpt_json = {
                 '2': 'Non-target (city) go trial'
                 }
             },
+
+        'timestamp': {
+            'Description': 'The timestamp recorded from the GradCPT Matlab script on each trial.'},
 
 
         'stimulus_coherence': {
@@ -49,9 +52,10 @@ gradcpt_json = {
 # EXPERIENCE SAMPLING
 
 es_json = {
-        'onset': 'Onset of item wording on screen in cumulative seconds',
-        'duration': 'Duration of item wording on screen in seconds',
-        'probe_number': 'The number ID of experience sampling probe in ascending order.',
+        'onset': 'Onset of item wording on screen in cumulative seconds since start of scan.',
+        'duration': 'Duration of item wording on screen in seconds since start of scan.',
+        'offset': 'Offset of item wording on screen in cumulative seconds since start of scan.',
+        'trial': 'The number ID of experience sampling probe in ascending order.',
         'item': {
             'aff': {
                 'question_wording': 'How positive or negative were you feeling?',
@@ -123,9 +127,9 @@ es_json = {
                 'high_anchor': 'completely about you'}
             },
 
-        'RT': 'Response time in seconds',
         'offset': 'Offset of wording from screen in cumulative seconds.',
-        'response': 'Response made by participant on the scale'
+        'response': 'Response made by participant on the scale',
+        'event_type': 'If a real-time fMRI study, whether this probe triggered by a brain event or a timeout.'
 }
          
 
