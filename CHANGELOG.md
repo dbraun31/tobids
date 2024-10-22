@@ -1,12 +1,12 @@
 # Changelog
 
 * **1.4.0** (2024-10-22)
-`tobids` is celebrating its first birthday! 🎉
+    - `tobids` is celebrating its first birthday! 🎉
 
-- Full support and more robust task inference for rt-fMRI behavioral data.
-    - Onset times are time-locked to start of scan.
-- This comes with an updated set of assumptions (see README).
-- More robust session inference. Session dirs now need the characters `ses` *and* a digit somewhere in the dir name.
+    - Full support and more robust task inference for rt-fMRI behavioral data.
+        - Onset times are time-locked to start of scan.
+    - This comes with an updated set of assumptions (see README).
+    - More robust session inference. Session dirs now need the characters `ses` *and* a digit somewhere in the dir name.
 
 * **1.3.0** (2024-08-29)
     * Added BIDS compatible handling of behavioral data.
