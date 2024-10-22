@@ -89,13 +89,16 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
         if not os.path.exists(out_bids.fpath.parent):
             os.makedirs(out_bids.fpath.parent)
 
-        # Write tsv
-        d.to_csv(out_bids.fpath, index=False, sep='\t')
+        if overwrite or not os.path.exists(out_bids.fpath):
+            # Write tsv
+            d.to_csv(out_bids.fpath, index=False, sep='\t')
+
         # Write json
         out_bids.update(extension='.json')
-        with open(out_bids.fpath, 'w') as file:
-            json.dump(gradcpt_json, file, indent=4)
-        file.close()
+        if overwrite or not os.path.exists(out_bids.fpath):
+            with open(out_bids.fpath, 'w') as file:
+                json.dump(gradcpt_json, file, indent=4)
+            file.close()
 
     # ptbPs
     ptbps = _sort_by_run(ptbps)
@@ -112,12 +115,14 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
             os.makedirs(out_bids.fpath.parent)
 
         # Write tsv
-        d.to_csv(out_bids.fpath, index=False, sep='\t')
+        if overwrite or not os.path.exists(out_bids.fpath):
+            d.to_csv(out_bids.fpath, index=False, sep='\t')
         # Write json
         out_bids.extension = '.json'
-        with open(out_bids.fpath, 'w') as file:
-            json.dump(es_json, file, indent=4)
-        file.close()
+        if overwrite or not os.path.exists(out_bids.fpath):
+            with open(out_bids.fpath, 'w') as file:
+                json.dump(es_json, file, indent=4)
+            file.close()
 
 
 def _extract_run(path):
