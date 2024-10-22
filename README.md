@@ -132,12 +132,11 @@ any name.
     its name and be one level under the root directory.*
 * **Session inference.** If there are sessions, session directories need to
     be *one level under* the subject directories (eg,
-    `my_source_data/subject_01/session_01`).  There need to be the characters
-    'sess' (case insensitive) somewhere in the directory name. 'sess' can be a
-    segment of a longer word, so 'session' is fine. *This means that no other
-    directory two levels under the root directory can have the characters
-    'sess' **anywhere** in its name.* (which is probably not a smart
-    restriction and I should improve that to also look for numbers)
+    `my_source_data/subject_01/session_01`).  There need to be the
+    characters 'ses' (case insensitive) somewhere in the directory name and
+    also at least one digit somwhere in the directory name. 'sess' can be a
+    segment of a longer word, so 'session' is fine. *This means that no
+    non-session directory two levels under the root directory can have the
 * **Task inference** 
     * **EEG.** For labeling tasks for EEG data, the program will
     assume that EEG data files are stored *one level under* a directory
