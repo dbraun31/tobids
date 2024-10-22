@@ -5,9 +5,12 @@ to convert raw neuro data to [BIDS](https://bids.neuroimaging.io/) format.
 This tool provides a command-line interface for easy data
 conversion.
 
-`tobids` version 1.3.0 is currently compatible with Brainvision EEG data (`.eeg`,
-`.vhdr`, `.vmrk`), NIFTI fMRI data (`.nii`), and behavioral data in comma
-separated values format (`.csv`).
+`tobids` version 1.3.1 is currently compatible with Brainvision EEG data (`.eeg`,
+`.vhdr`, `.vmrk`) and NIFTI fMRI data (`.nii`). Functionality for
+behavioral data is very specific to the needs of the Dynamic Brain and Mind
+Lab and will likely break for more general behavioral data. A future
+release will add an option to disregard behavioral data and only convert
+brain data.
 
 All questions can be directed to Dave Braun: dave.braun@drexel.edu
 
@@ -129,12 +132,12 @@ any name.
     its name and be one level under the root directory.*
 * **Session inference.** If there are sessions, session directories need to
     be *one level under* the subject directories (eg,
-    `my_source_data/subject_01/session_01`).  There need to be the characters
-    'sess' (case insensitive) somewhere in the directory name. 'sess' can be a
-    segment of a longer word, so 'session' is fine. *This means that no other
-    directory two levels under the root directory can have the characters
-    'sess' **anywhere** in its name.* (which is probably not a smart
-    restriction and I should improve that to also look for numbers)
+    `my_source_data/subject_01/session_01`).  There need to be the
+    characters 'ses' (case insensitive) somewhere in the directory name and
+    also at least one digit somwhere in the directory name. 'sess' can be a
+    segment of a longer word, so 'session' is fine. *This means that no
+    non-session directory two levels under the root directory can have the
+    characters `ses` and a digit **anywhere** in its directory name.*
 * **Task inference** 
     * **EEG.** For labeling tasks for EEG data, the program will
     assume that EEG data files are stored *one level under* a directory
@@ -148,11 +151,18 @@ any name.
     given the directory `12_BOLD_ExperienceSampling_run1`, the program will
     infer the task name to be `ExperienceSampling`.
     * **Behavioral**: 
-        * The program assumes *all* `.csv`s in the root directory are 
-            behavioral data! 
-        * The program assumes that the task associated with any `.csv`
-            behavioral file is the name of the directory that contains the
-            `.csv`.
+        * All files matching the pattern `*_city_mnt_*.mat` are GradCPT
+            data.
+        * All files named `ptbP.mat` are experience sampling data.
+            * These files should have the subject and run number somewhere
+                in the path matching the pattern: `[Ss]ub[-_]\d+`, and same
+                for run.
+            * These files should have a corresponding file in the same
+                directory matching the pattern: `*_P.mat` storing
+                additional timing information.
+        * *All* other `.csv`s in the root directory are assumed to be
+            experience sampling data. This is a strong assumption!
+
 * **fMRI root inference.** The fMRI root is the directory containing
     subdirectories for all scans within a session. The program will search
     within a single subject's session for a directory containing
@@ -168,69 +178,13 @@ any name.
     functional `.nii` files there can be. 
 
 
-
-
 ## Release notes
 
-* **1.3.0** (2024-08-29)
-    * Added BIDS compatible handling of behavioral data.
-        * Behavioral data in `.csv` get put in
-            `rawdata/sub-xxx/ses-xxx/func` as `*_events.tsv` along with a
-            sidecar json.
-        * As required, all `*_events.tsv` start with two columns `onset |
-            duration`.
-        * *Quirk:* Because our current experiments output all data as
-            `.mat`, and some of these files can't be read by Python, one
-            first has to run `helpers/process_eegfmri_behav.py` on the raw
-            data directory, then run `helpers/table_to_csv.m`, then run
-            `helpers/process_eegfmri_behav.py` again. Then the `tobids`
-            pipeline will work as expected.
-
-* **1.2.2** (2024-05-31)
-    * Fixed an issue with EEG events writing.
-        * Since we already have annotations, passing events to
-            `mne_bids.write_raw_bids` was causing redundant events to be
-            written.
-
-* **1.2.1** (2024-05-24)
-    * Fixed substantial bug in fMRI file naming
-        * `niis` was being sorted *inside* `_get_dests()`
-
-* **1.2.0** (2024-03-22)
-    * Much more robust task and fmri root inference.
-    * Fixed small issues that came up when converting only fMRI data (ie,
-        no eeg)
-
-* **1.1.2** (2024-02-21)
-    * Added validation check for user to approve automatically inferred
-        task name(s)
-    * More intelligent session handling (particularly for when there is
-        only one session).
-
-* **1.1.1** (2023-12-18)
-    * Option for more reliance on `mne_bids` for writing eeg files for more
-        robust and complete BIDS conversion (default is set to using
-        `mne_bids`).
-
-* **1.1.0** (2023-11-29)
-    * Support for NIFTI fMRI (`.nii`) added. Compresses to `.nii.gz`.
-    * Queries the user as to whether to overwrite existing data in the BIDS
-        directory.
-    * Included support for multiple sessions.
-    * More intelligent handling of paths.
-    * More robust subject directory discovery.
-    * Progress bar added.
-
-
-* **1.0.0** (2023-10-14)
-	* `tobids` is currently only equipped to handle BrainVision EEG data.
-	* BrainVision data format (`.eeg`, `.vhdr`, `.vmrk`) is acceptable in BIDS, and so the default behavior is to simply rename and move the data files. `tobids` includes functions for converting the data to `.edf`; future iterations of `tobids` can make this feature available via a command line option.
-	* `tobids` requires the source data to be structured such that the directories immediately inside the root directory are three-digit subject numbers. `tobids` will find and exclude any other directories at this level that don't match this format.
+See the [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 
 ### Still to do
 
 * Make the tool more amenable for subject-by-subject conversion.
 * Make session inference look for digits.
-* Figure out the coordinate system and how to produce `*_coordsystem.json`.
-* How to reference the `*.bvef` file for making a montage. Might need to
-    have user point to it.
+* Make more use of `pathlib.BIDSPath` in the writers.
+* Add option to disregard behavioral data.

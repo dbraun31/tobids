@@ -60,7 +60,8 @@ def has_sessions(subject_path):
 
     subdirs = os.listdir(subject_path)
 
-    sessions = [x for x in subdirs if 'sess' in x.lower()]
+    pattern = r'[Ss][Ee][Ss].*\d+|\d+.*[Ss][Ee][Ss]'
+    sessions = [x for x in subdirs if re.search(pattern, x)]
     out = {}
 
     if sessions:
@@ -128,7 +129,12 @@ def parse_data_type(seek_path):
         eeg = True
     if glob(str(seek_path) + '/**/*.nii', recursive=True):
         fmri = True
-    if glob(str(seek_path) + '/**/*.csv',recursive=True):
+
+    # For behav
+    ptbps = glob(str(seek_path / Path('**/ptbP.mat')), recursive=True)
+    csvs = glob(str(seek_path / Path('**/*.csv')), recursive=True)
+    gradcpts = glob(str(seek_path / Path('**/*_city_mnt_*.mat')), recursive=True)
+    if any(ptbps + csvs + gradcpts):
         behav = True
 
     return (eeg, fmri, behav)
