@@ -137,6 +137,7 @@ any name.
     also at least one digit somwhere in the directory name. 'sess' can be a
     segment of a longer word, so 'session' is fine. *This means that no
     non-session directory two levels under the root directory can have the
+    characters `ses` and a digit **anywhere** in its directory name.*
 * **Task inference** 
     * **EEG.** For labeling tasks for EEG data, the program will
     assume that EEG data files are stored *one level under* a directory
