@@ -61,7 +61,7 @@ def has_sessions(subject_path):
     subdirs = os.listdir(subject_path)
 
     pattern = r'[Ss][Ee][Ss].*\d+|\d+.*[Ss][Ee][Ss]'
-    sessions = [x for x in subdirs if re.search(pattern, x]
+    sessions = [x for x in subdirs if re.search(pattern, x)]
     out = {}
 
     if sessions:
