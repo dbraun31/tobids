@@ -86,6 +86,8 @@ if __name__ == '__main__':
         else:
             sessions = ['-999']
 
+        print(sessions)
+        sys.exit(1)
         # Iterate over sessions
         for session in sessions:
             if sessions[0] == '-999':
