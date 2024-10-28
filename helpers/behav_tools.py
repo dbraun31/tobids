@@ -7,6 +7,7 @@ import shutil
 import re
 import numpy as np
 import pandas as pd
+from helpers.metadata import make_write_log
 from helpers.behav_task_data import (
     gradcpt_json,
     gradcpt_headers,

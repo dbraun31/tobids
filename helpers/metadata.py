@@ -2,26 +2,28 @@
 
 from collections import OrderedDict
 from pathlib import Path
+import pickle
 import shutil
 from glob import glob
 import json
 import os
 import pandas as pd
+import json
 
 def make_write_log(ins, outs, modality):
+    first_dir = outs[0].parts[0]
     write_log = {}
-    name = 'log_{}'.format(modality)
-    if os.path.exists(name):
+    name = '{}/conversion_log_{}'.format(first_dir, modality)
+    if os.path.exists(name + '.pkl'):
         with open(name + '.pkl', 'rb') as file:
-            write_log = pickle.load(file)
+            write_log = pickle.load(file) 
     for i, o in zip(ins, outs):
-        write_log[i]: o
+        write_log[str(i)] = str(o)
     with open(name + '.pkl', 'wb') as file:
         pickle.dump(write_log, file)
-    with open(name + '.txt', 'w') as file:
-        file.write(str(write_log))
+    with open(name + '.json', 'w') as file:
+        json.dump(write_log, file, indent=4)
     file.close()
-
 
 
 def make_metadata(dest_path):

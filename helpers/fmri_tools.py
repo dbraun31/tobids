@@ -32,6 +32,10 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
                          name)
     '''
 
+    # Logging
+    outs = []
+    ins = []
+
     # Get session number
     # Session is empty string if only one session
     if meta_info['session'] != '.':
@@ -80,10 +84,6 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
         # Build write info
         dests = _get_dests(write_start, meta_info, scan_type, niis, sidecars)
 
-        # Log
-		make_write_log(niis, dests, 'fmri')
-
-
         # Write nifti
         for nii, dest in zip(niis, dests):
             dest_path = dest.with_suffix('.nii.gz') 
@@ -101,12 +101,16 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
             if write:
                 source_img = nib.load(nii)
                 nib.save(source_img, dest_path)
+                ins.append(nii)
+                outs.append(dest_path)
             progress_bar.update(1)
 
         # Write json
         for sidecar, dest in zip(sidecars, dests):
             dest_path = dest.with_suffix('.json')
             shutil.copy(sidecar, dest_path)
+
+    make_write_log(ins, outs, 'fmri')
 
 
 def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
