@@ -2,12 +2,14 @@ import sys
 import shutil
 import nibabel as nib
 import os
+import pickle
 from pathlib import Path
 import copy
 from tqdm import tqdm
 from glob import glob
 import os
 import numpy as np
+from helpers.metadata import make_write_log
 
 def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
     '''
@@ -78,6 +80,10 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
         # Build write info
         dests = _get_dests(write_start, meta_info, scan_type, niis, sidecars)
 
+        # Log
+		make_write_log(niis, dests, 'fmri')
+
+
         # Write nifti
         for nii, dest in zip(niis, dests):
             dest_path = dest.with_suffix('.nii.gz') 
@@ -137,8 +143,9 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
     
         if scan_type == 'BOLD':
             dests = []
-            run = 1
             last_task = ''
+            # Update run number based on task
+            task_runs = {}
             for nii in niis:
                 # Assumes task name is the parameter after BOLD
                 arg_list = nii.parent.parent.name.split('_')
@@ -148,13 +155,15 @@ def _get_dests(write_start, meta_info, scan_type, niis, sidecars):
                 task = arg_list[idx+1]
                 # Standardize ES vs. ExperienceSampling
                 task = 'ExperienceSampling' if task == 'ES' else task
+                if task not in task_runs:
+                    task_runs[task] = 1
+                else:
+                    task_runs[task] += 1
 
-                if task == last_task:
-                    run += 1
                 last_task = copy.deepcopy(task)
 
                 args = prefix + ['task-{}'.format(task),
-                                 'run-{}'.format(str(run).zfill(3)),
+                                 'run-{}'.format(str(task_runs[task]).zfill(3)),
                                  'bold']
                 write_file_stem = '_'.join(args)
 
@@ -172,7 +181,7 @@ def _get_scan_number(file):
     dir_name = file.parent.parent.name
     number = dir_name.split('_')[0]
     if not 'B0map' in dir_name:
-        return number
+        return int(number)
     
     # Keep last argument of file stem
     phase = file.stem.split('_')[-1]

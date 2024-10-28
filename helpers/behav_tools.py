@@ -65,6 +65,9 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
                         datatype='func',
                         root=dest_path,
                         check=False)
+    # For logging
+    ins = []	
+    outs = []
 
     # Update subject and session information
     ses_string = ''
@@ -93,6 +96,10 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
             # Write tsv
             d.to_csv(out_bids.fpath, index=False, sep='\t')
 
+            # Logging
+            ins.append(gradcpt)
+            outs.append(out_bids.fpath)
+
         # Write json
         out_bids.update(extension='.json')
         if overwrite or not os.path.exists(out_bids.fpath):
@@ -117,12 +124,20 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
         # Write tsv
         if overwrite or not os.path.exists(out_bids.fpath):
             d.to_csv(out_bids.fpath, index=False, sep='\t')
+
+            # Logging
+            ins.append(ptbp)
+            outs.append(out_bids.fpath)
+
         # Write json
         out_bids.extension = '.json'
         if overwrite or not os.path.exists(out_bids.fpath):
             with open(out_bids.fpath, 'w') as file:
                 json.dump(es_json, file, indent=4)
             file.close()
+
+    # Log writing
+    make_write_log(ins, outs, 'behav')
 
 
 def _extract_run(path):

@@ -8,6 +8,21 @@ import json
 import os
 import pandas as pd
 
+def make_write_log(ins, outs, modality):
+    write_log = {}
+    name = 'log_{}'.format(modality)
+    if os.path.exists(name):
+        with open(name + '.pkl', 'rb') as file:
+            write_log = pickle.load(file)
+    for i, o in zip(ins, outs):
+        write_log[i]: o
+    with open(name + '.pkl', 'wb') as file:
+        pickle.dump(write_log, file)
+    with open(name + '.txt', 'w') as file:
+        file.write(str(write_log))
+    file.close()
+
+
 
 def make_metadata(dest_path):
     # Produces readme, participants.tsv, participants.json,
