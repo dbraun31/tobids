@@ -1,7 +1,7 @@
-import os
-from scipy.io import loadmat
+import os from scipy.io import loadmat
 import sys
 from glob import glob
+import warnings
 from pathlib import Path
 import shutil
 import re
@@ -50,15 +50,17 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
 
     # IO
     ptbps = glob(str(seek_path / Path('**/ptbP.mat')), recursive=True)
-    ptbps = [Path(x) for x in ptbps]
+    ptbps = [(Path(x), 'ptbp') for x in ptbps]
     ESs = glob(str(seek_path / Path('**/*.csv')), recursive=True)
     ESs = [x for x in ESs if '_city_mtn_' not in x]
-    ESs = [Path(x) for x in ESs]
+    ESs = [(Path(x), 'csv') for x in ESs]
+    ESs = ptbps + ESs
+
     if ESs:
-        raise ValueError('tobids is not currently configured to handle\
-        behavioral data from the eeg-fmri study')
+        warnings.warn('tobids is not currently configured to time-lock\
+        behavioral data from the eeg-fmri study to scan start.')
     gradcpts = glob(str(seek_path / Path('**/*_city_mnt_*.mat')), recursive=True)
-    gradcpts = [Path(x) for x in gradcpts]
+    gradcpts = [(Path(x), 'gradcpt') for x in gradcpts]
 
     out_bids = BIDSPath(subject=subject,
                         suffix='events',
@@ -108,12 +110,18 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
                 json.dump(gradcpt_json, file, indent=4)
             file.close()
 
-    # ptbPs
-    ptbps = _sort_by_run(ptbps)
-    for run, ptbp in enumerate(ptbps, start=1):
+    # ESs
+    # Assuming CSV or ptbp
+    ESs = _sort_by_run(ESs)
+    for run, es in enumerate(ESs, start=1):
 
         # Convert path to data frame
-        d = _format_ptbp(ptbp)
+        if es[1] == 'ptbp':
+            d = _format_ptbp(es[0])
+        elif es[1] == 'csv':
+            d = _format_es(es[0])
+        else:
+            raise ValueError('Unable to infer ExperienceSampling data type')
 
         # Out dir
         out_bids.task = 'ExperienceSampling'
@@ -127,7 +135,7 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
             d.to_csv(out_bids.fpath, index=False, sep='\t')
 
             # Logging
-            ins.append(ptbp)
+            ins.append(es)
             outs.append(out_bids.fpath)
 
         # Write json
@@ -137,13 +145,15 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
                 json.dump(es_json, file, indent=4)
             file.close()
 
+
     # Log writing
     make_write_log(ins, outs, 'behav')
 
 
 def _extract_run(path):
     # Looks for a run-\d+ arg somewhere in the path
-    result = re.findall('[Rr]un[-_](\d+)', str(path))
+    # path is a (path, 'type') tuple
+    result = re.findall('[Rr]un[-_](\d+)', str(path[0]))
     if not result:
         return None
 
@@ -157,7 +167,7 @@ def _extract_run(path):
 
 
 def _sort_by_run(paths):
-    # Take in list of paths
+    # Take in list of (path, 'type') tuples
     # Try to extract run numbers from paths
     # Sort them by run numbers if run numbers are obtained
     # Otherwise, sort by default
@@ -165,7 +175,7 @@ def _sort_by_run(paths):
 
     runs = [_extract_run(x) for x in paths]
     if any(x is None for x in runs):
-        paths = sorted(paths)
+        paths = sorted(paths, key=lambda x: x[0])
     else:
         paths = sorted(paths, key=_extract_run)
 
@@ -241,3 +251,23 @@ def _format_ptbp(ptbp):
     d = d.drop(columns=['offset_relative', 'onset_relative', 'trigger_onset'])
 
     return d
+
+
+def _format_es(es):
+
+    # Reshape
+    d = pd.read_csv(es)
+    d.insert(0, 'trial', range(1, d.shape[0]+1))
+    d = pd.melt(d, id_vars=['trial'], value_vars = d.columns.drop('trial'),
+                var_name='var', value_name='value')
+    d[['item', 'metric']] = d['var'].str.split('_', expand=True)
+    d = d.drop('var', axis=1)
+    d = d.pivot(index=['trial', 'item'], columns='metric', values='value').reset_index()
+    d['duration'] = d['offset'] - d['onset']
+    pred = ['onset', 'duration']
+    new_cols = pred + [x for x in d.columns if x not in pred]
+    d = d[new_cols]
+
+    return d
+
+
