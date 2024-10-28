@@ -10,6 +10,7 @@ from helpers.modality_specific import (
 )
 import mne
 import mne_bids
+from helpers.metadata import make_write_log
 
 
 def bandaid_es(task_name):
@@ -25,6 +26,10 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
     Takes as input list of *.eeg files for one subject / session
     And the start of the write path (dest/sub-<>/ses-<>/eeg)
     '''
+
+    # Logging
+    ins = []
+    outs = []
 
     # Get list of task names
     tasks = list(set([x.parent.name for x in eeg_files]))
@@ -59,20 +64,23 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
             # Load raw data
             raw = _load_raw_brainvision(read_path)
 
+            # Logging
+            ins.append(read_path)
+
             # Use mne_bids to write?
             if use_mne_bids:
                 write_path_mne = Path(write_path.parts[0])
                 if write_path.parts[1] == 'rawdata':
                     write_path_mne = write_path_mne / Path(write_path.parts[1])
 
-                _make_mne_bids_data(raw,
+                outs.append(_make_mne_bids_data(raw,
                                     write_path_mne,
                                     subject=_get_number(subject),
                                     session=_get_number(session),
                                     task=bandaid_es(task_name),
                                     run=_get_number(run),
                                     overwrite=overwrite,
-                                    progress_bar=progress_bar)
+                                    progress_bar=progress_bar))
             else:
                 _make_bids_data(read_path, 
                                 write_stem, 
@@ -90,7 +98,7 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
             # Rename original vhdr to it's original extension
             _restore_vhdr(read_path)
 
-
+    make_write_log(ins, outs, 'eeg')
 
 def _make_mne_bids_data(raw, write_path, subject, session, task, run,
                         overwrite, progress_bar):
@@ -130,6 +138,8 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
 
     if write:
         mne_bids.write_raw_bids(raw, bids_path, overwrite=True, verbose='ERROR')
+
+    return bids_path.fpath
     
     progress_bar.update(1)
 

@@ -1,6 +1,7 @@
 import sys
 import shutil
 import nibabel as nib
+import re
 import os
 import pickle
 from pathlib import Path
@@ -101,8 +102,9 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
             if write:
                 source_img = nib.load(nii)
                 nib.save(source_img, dest_path)
-                ins.append(nii)
-                outs.append(dest_path)
+
+            ins.append(nii)
+            outs.append(dest_path)
             progress_bar.update(1)
 
         # Write json
@@ -183,11 +185,16 @@ def _get_scan_number(file):
     If it's an fmap, sort first by acquisition number and then by phase
     '''
     dir_name = file.parent.parent.name
-    number = dir_name.split('_')[0]
+    try:
+        number = int(re.search(r'(\d+)[-_]', dir_name).group(1))
+    except:
+        print(file)
+        raise ValueError('Failed to parse run number and convert to int')
+        sys.exit(1)
     if not 'B0map' in dir_name:
-        return int(number)
+        return number
     
-    # Keep last argument of file stem
+    # Keep last argument of file stem (unless it's 'ph')
     phase = file.stem.split('_')[-1]
     if phase == 'ph':
         phase = file.stem.split('_')[-2]

@@ -1,4 +1,5 @@
-import os from scipy.io import loadmat
+import os 
+from scipy.io import loadmat
 import sys
 from glob import glob
 import warnings
@@ -52,13 +53,12 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
     ptbps = glob(str(seek_path / Path('**/ptbP.mat')), recursive=True)
     ptbps = [(Path(x), 'ptbp') for x in ptbps]
     ESs = glob(str(seek_path / Path('**/*.csv')), recursive=True)
-    ESs = [x for x in ESs if '_city_mtn_' not in x]
+    ESs = [x for x in ESs if '_city_mnt_' not in x]
     ESs = [(Path(x), 'csv') for x in ESs]
     ESs = ptbps + ESs
 
     if ESs:
-        warnings.warn('tobids is not currently configured to time-lock\
-        behavioral data from the eeg-fmri study to scan start.')
+        warnings.warn('tobids is not currently configured to time-lock behavioral data from the eeg-fmri study to scan start.')
     gradcpts = glob(str(seek_path / Path('**/*_city_mnt_*.mat')), recursive=True)
     gradcpts = [(Path(x), 'gradcpt') for x in gradcpts]
 
@@ -84,7 +84,8 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
     # GradCPT
     gradcpts = _sort_by_run(gradcpts)
     for run, gradcpt in enumerate(gradcpts, start=1):
-        mat = loadmat(gradcpt)
+        # gradcpt is (path, 'type')
+        mat = loadmat(gradcpt[0])
         d = _format_gradcpt(mat, gradcpt_headers)
 
         # Out dir
@@ -99,9 +100,9 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
             # Write tsv
             d.to_csv(out_bids.fpath, index=False, sep='\t')
 
-            # Logging
-            ins.append(gradcpt)
-            outs.append(out_bids.fpath)
+        # Logging
+        ins.append(gradcpt)
+        outs.append(out_bids.fpath)
 
         # Write json
         out_bids.update(extension='.json')
@@ -134,9 +135,9 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
         if overwrite or not os.path.exists(out_bids.fpath):
             d.to_csv(out_bids.fpath, index=False, sep='\t')
 
-            # Logging
-            ins.append(es)
-            outs.append(out_bids.fpath)
+        # Logging
+        ins.append(es)
+        outs.append(out_bids.fpath)
 
         # Write json
         out_bids.extension = '.json'
