@@ -5,7 +5,7 @@ to convert raw neuro data to [BIDS](https://bids.neuroimaging.io/) format.
 This tool provides a command-line interface for easy data
 conversion.
 
-`tobids` version 1.3.1 is currently compatible with Brainvision EEG data (`.eeg`,
+`tobids` version 1.4.0 is currently compatible with Brainvision EEG data (`.eeg`,
 `.vhdr`, `.vmrk`) and NIFTI fMRI data (`.nii`). Functionality for
 behavioral data is very specific to the needs of the Dynamic Brain and Mind
 Lab and will likely break for more general behavioral data. A future
@@ -185,6 +185,6 @@ See the [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 ### Still to do
 
 * Make the tool more amenable for subject-by-subject conversion.
-* Make session inference look for digits.
 * Make more use of `pathlib.BIDSPath` in the writers.
+* Parallelize coversion across CPU cores
 * Add option to disregard behavioral data.

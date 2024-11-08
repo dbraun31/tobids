@@ -7,15 +7,14 @@ import numpy as np
 from glob import glob
 import re
 
-def _get_events_per_probe(vmrk):
+def _get_events_per_probe(vmrk_path, meta_info):
     '''
     Identify based on subject and session in path whether each probe has 13
     or 14 events
     '''
 
-    name = Path(vmrk).name
-    subject = int(re.search(r'fMRI_(\d+)', name).group(1))
-    session = int(re.search(r'_(\d+)\.', name).group(1))
+    subject = int(meta_info['subject'])
+    session = int(meta_info['session'])
 
     if subject == 1 or (subject == 2 and session == 1):
         return 13
@@ -36,7 +35,7 @@ def _reshape_behav(behav):
     return d
 
 
-def get_eegfmri_behav(vmrk_path, behav, sfreq=5000):
+def get_eegfmri_behav(vmrk_path, behav_path, meta_info, sfreq=5000):
     '''
     Takes in a vmrk file
     item_order is a string of item labels in order of onset
@@ -45,6 +44,7 @@ def get_eegfmri_behav(vmrk_path, behav, sfreq=5000):
     '''
 
     # Get item order
+    behav = pd.read_csv(behav_path)
     item_order = [x.replace('_response', '') for x in behav.columns if '_response' in x]
 
     # Import vmrk
@@ -60,15 +60,15 @@ def get_eegfmri_behav(vmrk_path, behav, sfreq=5000):
     onsets_raw = vmrk[np.where(np.isin(vmrk[:,0], start_markers))[0],1]
 
     # Identify probe count
-    events_per_probe = _get_events_per_probe(vmrk_path)
+    events_per_probe = _get_events_per_probe(vmrk_path, meta_info)
     n_probes = int(len(onsets_raw) / events_per_probe)
 
     if n_probes % 2:
-        raise ValueError('Problem inferring probe count for {}'.format(vmrk))
+        raise ValueError('Problem inferring probe count for {}'.format(vmrk_path))
 
     # Remove fixation events if present
     if events_per_probe == 14:
-        yank = np.arange(0, len(onsets), 14)
+        yank = np.arange(0, len(onsets_raw), 14)
         onsets_raw = np.delete(onsets_raw, yank)
 
     # Shift onsets to fmri scan start

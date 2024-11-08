@@ -6,7 +6,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from helpers.fmri_tools import get_fmri_root
+from writers.fmri_tools import get_fmri_root
 
 class ValidateBasics:
     '''

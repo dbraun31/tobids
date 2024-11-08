@@ -15,6 +15,7 @@ it first crawls through the whole data dir looking for mat files
         needs to be converted with matlab
 then need to run a matlab script to convert
 then run this script again to disperse the csvs back into the original dirs
+    again point it to the full data directory (eg, eeg-fmri)
 '''
 
 

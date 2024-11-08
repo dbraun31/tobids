@@ -13,7 +13,12 @@ from helpers.behav_task_data import (
     gradcpt_json,
     gradcpt_headers,
     es_json
-    )
+)
+from writers.eegfmri_behav import (
+        get_eegfmri_behav,
+        _reshape_behav,
+        _get_events_per_probe
+)
 import json
 from mne_bids import BIDSPath
 
@@ -119,7 +124,8 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
         if es[1] == 'ptbp':
             d = _format_ptbp(es[0])
         elif es[1] == 'csv':
-            d = _format_es(es[0])
+            meta_info = {'subject': subject, 'session': session, 'run': run}
+            d = _format_es(es[0], meta_info, seek_path)
         else:
             raise ValueError('Unable to infer ExperienceSampling data type')
 
@@ -253,20 +259,21 @@ def _format_ptbp(ptbp):
     return d
 
 
-def _format_es(es):
+def _format_es(behav_path, meta_info, seek_path):
+    '''
+    es is path to behav data
+    meta info is dict with keys subject, session, run as three digit zero
+    pads
+    '''
 
-    # Reshape
-    d = pd.read_csv(es)
-    d.insert(0, 'trial', range(1, d.shape[0]+1))
-    d = pd.melt(d, id_vars=['trial'], value_vars = d.columns.drop('trial'),
-                var_name='var', value_name='value')
-    d[['item', 'metric']] = d['var'].str.split('_', expand=True)
-    d = d.drop('var', axis=1)
-    d = d.pivot(index=['trial', 'item'], columns='metric', values='value').reset_index()
-    d['duration'] = d['offset'] - d['onset']
-    pred = ['onset', 'duration']
-    new_cols = pred + [x for x in d.columns if x not in pred]
-    d = d[new_cols]
+    # Need to track down the vmrk
+    vmrks = glob(str(seek_path / Path('**/*.vmrk')), recursive=True)
+    vmrks = [x for x in vmrks if 'gradcpt' not in x.lower()]
+    # Assuming run number is always right before extension
+    run = int(meta_info['run'])
+    vmrk_path = [x for x in vmrks if int(re.search(r'.*(\d+)\.vmrk', x).group(1))==run][0]
+
+    d = get_eegfmri_behav(vmrk_path, behav_path, meta_info)
 
     return d
 

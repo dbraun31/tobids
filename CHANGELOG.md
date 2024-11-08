@@ -1,5 +1,10 @@
 # Changelog
 
+* **1.4.1** (2024-11-08)
+    - For EEG-fMRI data, writes item onset times time-locked to scan start.
+        - Parses `.vmrk` EEG files to obtain timing, then merges back into
+            behavioral data.
+
 * **1.4.0** (2024-10-22)
     - `tobids` is celebrating its first birthday! 🎉
 
