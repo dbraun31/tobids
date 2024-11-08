@@ -57,8 +57,6 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
     ESs = [(Path(x), 'csv') for x in ESs]
     ESs = ptbps + ESs
 
-    if ESs:
-        warnings.warn('tobids is not currently configured to time-lock behavioral data from the eeg-fmri study to scan start.')
     gradcpts = glob(str(seek_path / Path('**/*_city_mnt_*.mat')), recursive=True)
     gradcpts = [(Path(x), 'gradcpt') for x in gradcpts]
 
@@ -113,6 +111,7 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
 
     # ESs
     # Assuming CSV or ptbp
+    # Structure: (data, 'csv' or 'ptbp')
     ESs = _sort_by_run(ESs)
     for run, es in enumerate(ESs, start=1):
 

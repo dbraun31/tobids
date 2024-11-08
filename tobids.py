@@ -24,11 +24,11 @@ from helpers.basic_parsing import (
         configure_progress_bar,
         get_overwrite
 )
-from helpers.eeg_tools import write_eeg
+from writers.eeg_tools import write_eeg
 from helpers.mne_bids_mods import _write_dig_bids
-from helpers.fmri_tools import (write_fmri, get_fmri_root)
+from writers.fmri_tools import (write_fmri, get_fmri_root)
 from helpers.metadata import make_metadata
-from helpers.behav_tools import write_behav
+from writers.behav_tools import write_behav
 
 
 '''
