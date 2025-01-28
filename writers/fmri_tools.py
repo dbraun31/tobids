@@ -61,6 +61,8 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
         # Find the appropriate dir
         scans = os.listdir(fmri_root)
         target_dirs = [x for x in scans if key in x]
+        # Drop hidden dirs
+        target_dirs = [x for x in target_dirs if not x.startswith('.')]
 
         # Ensure there's the appropriate amount of found folders
         _error_check(target_dirs, threshold, fmri_root, scan_type)
