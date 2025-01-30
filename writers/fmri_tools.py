@@ -72,7 +72,7 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
         sidecars = []
         for directory in target_dirs:
             scan_root = fmri_root / Path(directory + '/NIFTI')
-            files = [file for file in scan_root.iterdir() if file.is_file()]
+            files = [file for file in scan_root.iterdir() if not file.name.startswith('.') and file.is_file()]
             niis += [x for x in files if x.suffix == '.nii']
             sidecars += [x for x in files if x.suffix == '.json']
 
