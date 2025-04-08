@@ -62,6 +62,7 @@ if __name__ == '__main__':
         print('CONVERT MATS TO CSVS WITH TABLE_TO_MAT.M')
     
     ## After ES mat files have been converted
+    ## Assumes script is being run from the dir containing `csvs` dir
     if spread_csvs:
         files = glob('csvs/*.csv')
         files = [Path(x) for x in files]
