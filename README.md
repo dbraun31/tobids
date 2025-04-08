@@ -47,6 +47,8 @@ into. However, `pip` will work as well.
 $ cd ~
 $ git clone https://github.com/dbraun31/tobids.git
 $ cd tobids
+# Make sure conda-forge is added as a channel
+$ conda config --add channels conda-forge
 $ conda env create -f environment.yml
 $ conda activate eeg
 ```
