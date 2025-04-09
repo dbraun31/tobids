@@ -27,6 +27,8 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
     And the start of the write path (dest/sub-<>/ses-<>/eeg)
     '''
 
+    write_path = write_path / Path('eeg')
+
     # Logging
     ins = []
     outs = []
@@ -46,6 +48,7 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
             runs = [1]
 
         for run, read_path in zip(runs, task_files):
+
             # Build write file name
             subject = write_path.parent.parent.name
             session = write_path.parent.name
@@ -69,9 +72,8 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
 
             # Use mne_bids to write?
             if use_mne_bids:
-                write_path_mne = Path(write_path.parts[0])
-                if write_path.parts[1] == 'rawdata':
-                    write_path_mne = write_path_mne / Path(write_path.parts[1])
+                # Bad assumption
+                write_path_mne = _trim_path_to_dir(write_path, 'rawdata')
 
                 outs.append(_make_mne_bids_data(raw,
                                     write_path_mne,
@@ -99,6 +101,25 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
             _restore_vhdr(read_path)
 
     make_write_log(ins, outs, 'eeg')
+
+
+def _trim_path_to_dir(path, target_dir_name):
+    '''
+    Trims a pathlib.Path to end with target_dir_name
+
+    PARAMETERS
+    ---------
+    path (pathlib.Path): The path to trim
+    target_dir_name (str): The target path to trim at
+
+    Returns the trimmed path as pathlib.Path
+    Returns a ValueError if target_dir_name not in path
+    '''
+    for parent in [path] + list(path.parents):
+        if parent.name == target_dir_name:
+            return parent
+    raise ValueError(f"Directory '{target_dir_name}' not found in path '{path}")
+
 
 def _make_mne_bids_data(raw, write_path, subject, session, task, run,
                         overwrite, progress_bar):
