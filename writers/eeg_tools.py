@@ -107,11 +107,11 @@ def get_true_event_label(events, event_id):
     # occuring more than once in the data
 
     # Find first item onset
-    item_label = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x]
+    item_labels = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x]
 
-    if len(item_label) == 1:
-        return item_label[0]
-    elif not len(item_label):
+    if len(item_labels) == 1:
+        return item_labels[0]
+    elif not len(item_labels):
         return None
 
     # If there's more than one event label
@@ -123,7 +123,7 @@ def get_true_event_label(events, event_id):
 
     out = [x for x in d if d[x] > 1]
 
-    if len(out) >= 1:
+    if len(out) > 1:
         return None
 
     return out[0]

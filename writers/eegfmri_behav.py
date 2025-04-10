@@ -36,23 +36,27 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     behav = pd.read_csv(behav_path)
     item_order = [x.replace('_response', '') for x in behav.columns if '_response' in x]
     behav = _reshape_behav(behav)
+    message = (f'Problem inferring EEG timestamp for ES '
+                     f"item for subject {args['subject']}, session"
+                     f" {args['session']}, run {args['run']}.")
 
     # Import eeg
     raw = mne.io.read_raw_brainvision(vhdr_path)
 
     # Find scan start time
     events, event_id = mne.events_from_annotations(raw)
-    tr_label = [x for x in event_id.keys() if 'T  1' in x][0]
-    tr_number = event_id[tr_label]
+    tr_label = [x for x in event_id.keys() if 'T  1' in x]
+
+    if not len(tr_label):
+        raise ValueError(message)
+
+    tr_number = event_id[tr_label[0]]
     scan_start_s = events[events[:, 2] == tr_number, :][0][0] / raw.info['sfreq']
 
     item_label = get_true_event_label(events, event_id)
-    message = (f'Problem inferring EEG timestamp for first ES '
-                     f"item for subject {args['subject']}, session"
-                     f" {args['session']}, run {args['run']}.")
 
     # If cant find a unique item label
-    if not item_label:
+    if item_label is None:
         raise ValueError(message)
 
     item_number = event_id[item_label]
@@ -90,27 +94,3 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     
     return out['eeg'], out['fmri']
 
-
-def get_true_event_label(events, event_id):
-    # If there's more than one non 255 'Stimulus' marker, take only the one
-    # occuring more than once in the data
-
-    # Find first item onset
-    item_label = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x]
-
-    if len(item_label) == 1:
-        return item_label[0]
-
-    # Ensure there's only one non Stimulus/ S255
-        # keep only the label occuring more than once
-    d = {}
-    for label in item_labels:
-        count = len(events[events[:,2] == event_id[label],:])
-        d[label] = count
-
-    out = [x for x in d if d[x] > 1]
-
-    if len(out) > 1:
-        return None
-
-    return out[0]
