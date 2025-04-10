@@ -255,6 +255,7 @@ def _format_gradcpt(mat, gradcpt_headers, args):
                    f"event_id: {event_id}"
                    "\nFilling in NAs")
         print('\n', message, '\n')
+        d_eeg = pd.DataFrame(mat['response'], columns=gradcpt_headers)
         d_eeg.insert(0, 'onset', np.nan)
         d_eeg.insert(1, 'duration', np.nan)
 

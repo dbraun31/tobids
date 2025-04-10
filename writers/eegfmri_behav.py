@@ -46,17 +46,34 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     scan_start_s = events[events[:, 2] == tr_number, :][0][0] / raw.info['sfreq']
 
     # Find first item onset
-    item_label = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x][0]
+    item_label = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x]
+
+    # Ensure there's only one non Stimulus/ S255
+    if len(item_label) > 1:
+        # keep only the label occuring more than once
+        item_label = _get_true_label(events, event_id, item_label)
+        if not item_label:
+            raise ValueError(f'Problem inferring EEG timestamp for first ES '
+                             f"item for subject {args['subject']}, session"
+                             f" {args['session']}, run {args['run']}.")
+    else:
+        item_label = item_label[0]
+
     item_number = event_id[item_label]
     first_stims = events[events[:,2] == item_number][:, 0][:3] / raw.info['sfreq']
     first_durations = np.diff(first_stims)
+    if not len(first_durations):
+        raise ValueError(f'Problem inferring EEG timestamp for first ES '
+                         f"item for subject {args['subject']}, session"
+                         f" {args['session']}, run {args['run']}.")
     if first_durations[0] < 12.5:
         first_item_idx = 0
     elif first_durations[1] < 12.5:
         first_item_idx = 1
     else:
         raise ValueError(f'Problem inferring EEG timestamp for first ES '
-        f'item for subject {subject}, session {session}, run {run}.')
+                         f"item for subject {args['subject']}, session"
+                         f" {args['session']}, run {args['run']}.")
     first_item_s = first_stims[first_item_idx]
 
     out = {}
@@ -80,3 +97,22 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     return out['eeg'], out['fmri']
 
 
+def _get_true_label(events, event_id, item_labels):
+    # If there's more than one non 255 'Stimulus' marker, take only the one
+    # occuring more than once in the data
+
+    d = {}
+    for label in item_labels:
+        count = len(events[events[:,2] == event_id[label],:])
+        d[label] = count
+
+    out = [x for x in d if d[x] > 1]
+
+    if len(out) > 1:
+        return None
+
+    return out[0]
+
+
+
+        
