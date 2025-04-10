@@ -2,6 +2,7 @@ import os
 from scipy.io import loadmat
 import sys
 from glob import glob
+import mne
 import warnings
 from pathlib import Path
 import shutil
@@ -14,16 +15,12 @@ from helpers.behav_task_data import (
     gradcpt_headers,
     es_json
 )
-from writers.eegfmri_behav import (
-        get_eegfmri_behav,
-        _reshape_behav,
-        _get_events_per_probe
-)
+from writers.eegfmri_behav import get_eegfmri_behav
 import json
 from mne_bids import BIDSPath
 
 
-def write_behav(subject, session, seek_path, dest_path, overwrite):
+def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
     '''
     Nested within a subject and session loop
     Moves each behavioral CSV file to its events.tsv BIDS dest in func
@@ -37,13 +34,16 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
     seek_path: subject/session/ as pathlib.Path
     dest_path: *_BIDS/rawdata as pathlib.Path
     overwrite: boolean indicating whether to overwrite existing data
+    eeg (boolean): Whether or not there is EEG data
+    fmri (boolean): Whether or not there is fMRI data
 
     ------------
 
     ASSUMPTIONS:
     -----------
     1. All GradCPT data have "*_city_mnt_*.mat" in the filename
-    2. All files named "ptbP.mat" are experience sampling data
+    2. All files named "ptbP.mat" are experience sampling data 
+        (these only come from rt-fmri)
         2a. These files have subject and run number in their path like 
             "sub-\d+" and "[Rr]un_\d+"
     3. Any CSV files without "*_city_mtn_*.mat" in the name are experience
@@ -51,6 +51,10 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
     4. The non ptbP.mat data will, when sorted, be in order of run number.
     5. There will be either ptbP.mat or non *_city_mtn_*.csv experience
         sampling data, not both
+
+    ** NOTE TO SELF **
+    really should revisit this and make sure it generalizes across tasks
+    and modalities
     '''
 
 
@@ -68,7 +72,6 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
     out_bids = BIDSPath(subject=subject,
                         suffix='events',
                         extension='.tsv',
-                        datatype='func',
                         root=dest_path,
                         check=False)
     # For logging
@@ -83,36 +86,47 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
 
     sub_string = 'sub-{}'.format(subject)
 
+    # Make compact dict of args
+    args = {'subject': subject,
+            'session': session,
+            'dest_path': dest_path}
+
 
     # GradCPT
     gradcpts = _sort_by_run(gradcpts)
     for run, gradcpt in enumerate(gradcpts, start=1):
         # gradcpt is (path, 'type')
+        
+        args['run'] = run.zfill(3)
         mat = loadmat(gradcpt[0])
-        d = _format_gradcpt(mat, gradcpt_headers)
+        d_eeg, d_fmri = _format_gradcpt(mat, gradcpt_headers, args)
 
         # Out dir
         out_bids.task = 'GradCPT'
         out_bids.run = str(run).zfill(3)
-        out_bids.extension = '.tsv'
-        
-        if not os.path.exists(out_bids.fpath.parent):
-            os.makedirs(out_bids.fpath.parent)
+        datatypes = ['eeg', 'func']
+        for d, datatype in zip([d_eeg, d_fmri], datatypes):
+            
+            out_bids.datatype = datatype
+            out_bids.update(extension = '.tsv')
 
-        if overwrite or not os.path.exists(out_bids.fpath):
-            # Write tsv
-            d.to_csv(out_bids.fpath, index=False, sep='\t')
+            if not os.path.exists(out_bids.fpath.parent):
+                os.makedirs(out_bids.fpath.parent)
 
-        # Logging
-        ins.append(gradcpt)
-        outs.append(out_bids.fpath)
+            if overwrite or not os.path.exists(out_bids.fpath):
+                # Write tsv
+                d.to_csv(out_bids.fpath, index=False, sep='\t')
 
-        # Write json
-        out_bids.update(extension='.json')
-        if overwrite or not os.path.exists(out_bids.fpath):
-            with open(out_bids.fpath, 'w') as file:
-                json.dump(gradcpt_json, file, indent=4)
-            file.close()
+            # Logging
+            ins.append(gradcpt)
+            outs.append(out_bids.fpath)
+
+            # Write json
+            out_bids.update(extension='.json')
+            if overwrite or not os.path.exists(out_bids.fpath):
+                with open(out_bids.fpath, 'w') as file:
+                    json.dump(gradcpt_json, file, indent=4)
+                file.close()
 
     # ESs
     # Assuming CSV or ptbp
@@ -120,36 +134,47 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
     ESs = _sort_by_run(ESs)
     for run, es in enumerate(ESs, start=1):
 
+        run = str(run).zfill(3)
+        args['run'] = run
+
         # Convert path to data frame
         if es[1] == 'ptbp':
+            # Assuming this is fMRI only data
             d = _format_ptbp(es[0])
+            d_hold = {'func': d}
         elif es[1] == 'csv':
-            meta_info = {'subject': subject, 'session': session, 'run': run}
-            d = _format_es(es[0], meta_info, seek_path)
+            # Should add some logic down in _format_es somewhere to check
+            # whether it's EEG, fMRI, or both
+            d_eeg, d_fmri = _format_es(es[0], args, dest_path)
+            d_hold = {'eeg': d_eeg, 'func': d_fmri}
         else:
             raise ValueError('Unable to infer ExperienceSampling data type')
 
         # Out dir
         out_bids.task = 'ExperienceSampling'
-        out_bids.run = str(run).zfill(3)
-        out_bids.extension = '.tsv'
-        if not os.path.exists(out_bids.fpath.parent):
-            os.makedirs(out_bids.fpath.parent)
+        out_bids.run = run
+        
+        for datatype in d_hold.keys():
+            out_bids.extension = '.tsv'
+            out_bids.datatype = datatype
 
-        # Write tsv
-        if overwrite or not os.path.exists(out_bids.fpath):
-            d.to_csv(out_bids.fpath, index=False, sep='\t')
+            if not os.path.exists(out_bids.fpath.parent):
+                os.makedirs(out_bids.fpath.parent)
 
-        # Logging
-        ins.append(es)
-        outs.append(out_bids.fpath)
+            # Write tsv
+            if overwrite or not os.path.exists(out_bids.fpath):
+                d_hold[datatype].to_csv(out_bids.fpath, index=False, sep='\t')
 
-        # Write json
-        out_bids.extension = '.json'
-        if overwrite or not os.path.exists(out_bids.fpath):
-            with open(out_bids.fpath, 'w') as file:
-                json.dump(es_json, file, indent=4)
-            file.close()
+            # Logging
+            ins.append(es)
+            outs.append(out_bids.fpath)
+
+            # Write json
+            out_bids.extension = '.json'
+            if overwrite or not os.path.exists(out_bids.fpath):
+                with open(out_bids.fpath, 'w') as file:
+                    json.dump(es_json, file, indent=4)
+                file.close()
 
 
     # Log writing
@@ -157,8 +182,11 @@ def write_behav(subject, session, seek_path, dest_path, overwrite):
 
 
 def _extract_run(path):
-    # Looks for a run-\d+ arg somewhere in the path
-    # path is a (path, 'type') tuple
+    '''
+    Looks for a run-\d+ arg somewhere in the path
+    path is a (path, 'type') tuple
+    '''
+    
     result = re.findall('[Rr]un[-_](\d+)', str(path[0]))
     if not result:
         return None
@@ -173,11 +201,13 @@ def _extract_run(path):
 
 
 def _sort_by_run(paths):
-    # Take in list of (path, 'type') tuples
-    # Try to extract run numbers from paths
-    # Sort them by run numbers if run numbers are obtained
-    # Otherwise, sort by default
-        # ** BIG ASSUMPTION ** #
+    '''
+     Take in list of (path, 'type') tuples
+     Try to extract run numbers from paths
+     Sort them by run numbers if run numbers are obtained
+     Otherwise, sort by default
+         ** BIG ASSUMPTION ** #
+     '''
 
     runs = [_extract_run(x) for x in paths]
     if any(x is None for x in runs):
@@ -187,25 +217,75 @@ def _sort_by_run(paths):
 
     return paths
 
-def _format_gradcpt(mat, gradcpt_headers):
-    # Takes in the mat data
-    # Returns out pd df with onset and duration locked to fmri start time
+def _format_gradcpt(mat, gradcpt_headers, args):
+    '''
+    Takes in the mat data
+    Returns out pd df with onset and duration locked to fmri start time
+    '''
 
+    # Make fmri data
     raw_onsets = mat['data'][:, 8]
     starttime = mat['starttime']
     onsets = (raw_onsets - starttime)[0]
     durations = np.diff(onsets)
     durations = np.append(durations, np.NaN)
-    d = pd.DataFrame(mat['response'], columns=gradcpt_headers)
-    d.insert(0, 'onset', onsets)
-    d.insert(1, 'duration', durations)
+    d_fmri = pd.DataFrame(mat['response'], columns=gradcpt_headers)
+    d_fmri.insert(0, 'onset', onsets)
+    d_fmri.insert(1, 'duration', durations)
 
-    return d
+    # Make eeg data
+    eeg_path = BIDSPath(subject = args['subject'],
+                        session = args['session'],
+                        run = args['run'],
+                        task = 'GradCPT',
+                        suffix = 'eeg',
+                        datatype = 'eeg',
+                        extension = '.vhdr',
+                        root = args['dest_path'])
 
+    raw = mne.io.read_raw_brainvision(eeg_path.fpath)
+    events, event_id = mne.events_from_annotations(raw)
+
+    # Extract event onset label from EEG data
+    stim_label = _get_stim_label(event_id)
+    if not stim_label:
+        message = (f"Unable to find stimulus onset label in eeg data.\n"
+                   f"Subject {subject} session {session} run {run}")
+        raise ValueError(message)
+
+    stim_number = event_id[stim_label]
+    task_onset_s = events[events[:, 2] == stim_number, :][0][0] / raw.info['sfreq']
+    # Assuming gradcpt stimulus onset 20 s after task onset
+    stim_onset_s = task_onset_s + 20
+    shift = (raw_onsets - stim_onset_s)[0]
+    onsets = raw_onsets - shift
+    durations = np.diff(onsets)
+    durations = np.append(durations, np.NaN)
+    d_eeg = pd.DataFrame(mat['response'], columns=gradcpt_headers)
+    d_eeg.insert(0, 'onset', onsets)
+    d_eeg.insert(1, 'duration', durations)
+
+
+    return d_eeg, d_fmri
+
+
+def _get_stim_label(event_id):
+    '''
+    Get the stimulus label from eeg event labels associated with stimulus
+    onset
+    Assumes it has the word 'Stimulus' and not '255'
+    '''
+    labels = list(event_id.keys())
+    for label in labels:
+        if 'Stimulus' in label and '255' not in label:
+            return label
+    return None
 
 def _format_ptbp(ptbp):
-    # Takes in ptbp path as Path
-    # Returns formatted ES data locked to scan start
+    '''
+    Takes in ptbp path as Path
+    Returns formatted ES data locked to scan start
+    '''
 
     trigger_codes =  {1: 'brain', 2: 'timeout'}
 
@@ -259,22 +339,29 @@ def _format_ptbp(ptbp):
     return d
 
 
-def _format_es(behav_path, meta_info, seek_path):
+def _format_es(behav_path, args, dest_path):
     '''
     es is path to behav data
     meta info is dict with keys subject, session, run as three digit zero
     pads
     '''
 
-    # Need to track down the vmrk
-    vmrks = glob(str(seek_path / Path('**/*.vmrk')), recursive=True)
-    vmrks = [x for x in vmrks if 'gradcpt' not in x.lower()]
-    # Assuming run number is always right before extension
-    run = int(meta_info['run'])
-    vmrk_path = [x for x in vmrks if int(re.search(r'.*(\d+)\.vmrk', x).group(1))==run][0]
+    # Need to track down the vmrk (going to get from already converted BIDS data)
 
-    d = get_eegfmri_behav(vmrk_path, behav_path, meta_info)
+    bids_dest = BIDSPath(
+                    subject = args['subject'],
+                    session = args['session'],
+                    task = 'ExperienceSampling',
+                    run = args['run'],
+                    suffix = 'eeg',
+                    extension = '.vhdr',
+                    datatype = 'eeg',
+                    root = args['dest_path'])
 
-    return d
+    vhdr_path = bids_dest.fpath
+
+    d_eeg, d_fmri = get_eegfmri_behav(vhdr_path, behav_path, args)
+
+    return d_eeg, d_fmri
 
 
