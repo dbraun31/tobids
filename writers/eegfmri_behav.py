@@ -60,7 +60,7 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     first_item_s = first_stims[first_item_idx]
 
     out = {}
-    offset = {'eeg': first_item_s, 'fmri': scan_start}
+    offset = {'eeg': first_item_s, 'fmri': scan_start_s}
     modalities = ['eeg', 'fmri']
 
     for modality in modalities:

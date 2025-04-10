@@ -97,7 +97,7 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
     for run, gradcpt in enumerate(gradcpts, start=1):
         # gradcpt is (path, 'type')
         
-        args['run'] = run.zfill(3)
+        args['run'] = str(run).zfill(3)
         mat = loadmat(gradcpt[0])
         d_eeg, d_fmri = _format_gradcpt(mat, gradcpt_headers, args)
 
@@ -250,8 +250,16 @@ def _format_gradcpt(mat, gradcpt_headers, args):
     stim_label = _get_stim_label(event_id)
     if not stim_label:
         message = (f"Unable to find stimulus onset label in eeg data.\n"
-                   f"Subject {subject} session {session} run {run}")
-        raise ValueError(message)
+                   f"Subject {args['subject']} session {args['session']} "
+                   f"run {args['run']}\n"
+                   f"event_id: {event_id}"
+                   "\nFilling in NAs")
+        print('\n', message, '\n')
+        d_eeg.insert(0, 'onset', np.nan)
+        d_eeg.insert(1, 'duration', np.nan)
+
+        return d_eeg, d_fmri
+
 
     stim_number = event_id[stim_label]
     task_onset_s = events[events[:, 2] == stim_number, :][0][0] / raw.info['sfreq']

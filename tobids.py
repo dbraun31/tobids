@@ -133,7 +133,9 @@ if __name__ == '__main__':
                     session, # Goes in as -999 if no sessions
                     seek_path,
                     dest_path, # writedir/rawdata
-                    overwrite)
+                    overwrite,
+                    eeg,
+                    fmri)
 
 
     # Make metadata if it doesn't exist
