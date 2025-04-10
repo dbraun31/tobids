@@ -113,7 +113,7 @@ if __name__ == '__main__':
                 eeg_files = glob(str(seek_path) + '/**/*.eeg', recursive=True)
                 eeg_files = [Path(x) for x in eeg_files]
                 write_eeg(eeg_files, 
-                          write_path / Path('eeg'), 
+                          write_path, 
                           make_edf,
                           overwrite,
                           use_mne_bids,
