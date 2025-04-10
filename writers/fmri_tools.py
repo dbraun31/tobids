@@ -76,6 +76,10 @@ def write_fmri(fmri_root, write_start, meta_info, overwrite, progress_bar):
             niis += [x for x in files if x.suffix == '.nii']
             sidecars += [x for x in files if x.suffix == '.json']
 
+        # Remove new '10\d\d.nii' scans added by software update
+        if scan_type == 'BOLD':
+            niis, sidecars = _cut_ten_prefix(niis, sidecars)
+
         # Make sure there's the appropriate amount of results per filetype
         for l in [niis, sidecars]:
             _error_check(l, threshold, fmri_root, scan_type)
@@ -264,3 +268,16 @@ def get_fmri_root(seek_path):
 
     return founds[0]
 
+def _cut_ten_prefix(niis, sidecars):
+    # Cut out the weird 10\d\d.nii that got added by the software update
+
+    pattern = r'.*_\d\d\.[a-z]+$'
+    niis_out = []
+    sidecars_out = []
+
+    for nii, sidecar in zip(niis, sidecars):
+        if re.search(pattern, nii.name) is not None:
+            niis_out.append(nii)
+            sidecars_out.append(sidecar)
+
+    return niis_out, sidecars_out
