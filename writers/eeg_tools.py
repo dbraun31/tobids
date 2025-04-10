@@ -13,13 +13,6 @@ import mne_bids
 from helpers.metadata import make_write_log
 
 
-def bandaid_es(task_name):
-    # Takes in task name as string
-    # If task name is ES then return ExperienceSampling
-    if task_name == 'ES':
-        return 'ExperienceSampling'
-    return task_name
-
 
 def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress_bar):
     '''
@@ -102,6 +95,41 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
 
     make_write_log(ins, outs, 'eeg')
 
+def bandaid_es(task_name):
+    # Takes in task name as string
+    # If task name is ES then return ExperienceSampling
+    if task_name == 'ES':
+        return 'ExperienceSampling'
+    return task_name
+
+def get_true_event_label(events, event_id):
+    # If there's more than one non 255 'Stimulus' marker, take only the one
+    # occuring more than once in the data
+
+    # Find first item onset
+    item_label = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x]
+
+    if len(item_label) == 1:
+        return item_label[0]
+    elif not len(item_label):
+        return None
+
+    # If there's more than one event label
+        # keep only the label occuring more than once
+    d = {}
+    for label in item_labels:
+        count = len(events[events[:,2] == event_id[label],:])
+        d[label] = count
+
+    out = [x for x in d if d[x] > 1]
+
+    if len(out) >= 1:
+        return None
+
+    return out[0]
+
+
+# --------- INTERNAL FUNCTIONS -----------
 
 def _trim_path_to_dir(path, target_dir_name):
     '''

@@ -9,6 +9,7 @@ import shutil
 import re
 import numpy as np
 import pandas as pd
+from writers.eeg_tools import get_true_event_label
 from helpers.metadata import make_write_log
 from helpers.behav_task_data import (
     gradcpt_json,
@@ -180,7 +181,6 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
     # Log writing
     make_write_log(ins, outs, 'behav')
 
-
 def _extract_run(path):
     '''
     Looks for a run-\d+ arg somewhere in the path
@@ -247,7 +247,7 @@ def _format_gradcpt(mat, gradcpt_headers, args):
     events, event_id = mne.events_from_annotations(raw)
 
     # Extract event onset label from EEG data
-    stim_label = _get_stim_label(event_id)
+    stim_label = get_true_event_label(events, event_id)
     if not stim_label:
         message = (f"Unable to find stimulus onset label in eeg data.\n"
                    f"Subject {args['subject']} session {args['session']} "

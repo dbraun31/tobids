@@ -4,6 +4,7 @@
 from pathlib import Path
 import mne
 import pandas as pd
+from writers.eeg_tools import get_true_event_label
 import numpy as np
 from glob import glob
 import re
@@ -45,27 +46,20 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     tr_number = event_id[tr_label]
     scan_start_s = events[events[:, 2] == tr_number, :][0][0] / raw.info['sfreq']
 
-    # Find first item onset
-    item_label = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x]
+    item_label = get_true_event_label(events, event_id)
+    message = (f'Problem inferring EEG timestamp for first ES '
+                     f"item for subject {args['subject']}, session"
+                     f" {args['session']}, run {args['run']}.")
 
-    # Ensure there's only one non Stimulus/ S255
-    if len(item_label) > 1:
-        # keep only the label occuring more than once
-        item_label = _get_true_label(events, event_id, item_label)
-        if not item_label:
-            raise ValueError(f'Problem inferring EEG timestamp for first ES '
-                             f"item for subject {args['subject']}, session"
-                             f" {args['session']}, run {args['run']}.")
-    else:
-        item_label = item_label[0]
+    # If cant find a unique item label
+    if not item_label:
+        raise ValueError(message)
 
     item_number = event_id[item_label]
     first_stims = events[events[:,2] == item_number][:, 0][:3] / raw.info['sfreq']
     first_durations = np.diff(first_stims)
     if not len(first_durations):
-        raise ValueError(f'Problem inferring EEG timestamp for first ES '
-                         f"item for subject {args['subject']}, session"
-                         f" {args['session']}, run {args['run']}.")
+        raise ValueError(message)
     if first_durations[0] < 12.5:
         first_item_idx = 0
     elif first_durations[1] < 12.5:
@@ -97,10 +91,18 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     return out['eeg'], out['fmri']
 
 
-def _get_true_label(events, event_id, item_labels):
+def get_true_event_label(events, event_id):
     # If there's more than one non 255 'Stimulus' marker, take only the one
     # occuring more than once in the data
 
+    # Find first item onset
+    item_label = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x]
+
+    if len(item_label) == 1:
+        return item_label[0]
+
+    # Ensure there's only one non Stimulus/ S255
+        # keep only the label occuring more than once
     d = {}
     for label in item_labels:
         count = len(events[events[:,2] == event_id[label],:])
@@ -112,7 +114,3 @@ def _get_true_label(events, event_id, item_labels):
         return None
 
     return out[0]
-
-
-
-        
