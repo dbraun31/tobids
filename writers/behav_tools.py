@@ -248,7 +248,9 @@ def _format_gradcpt(mat, gradcpt_headers, args):
 
     # Extract event onset label from EEG data
     stim_label = get_true_event_label(events, event_id)
-    if not stim_label:
+
+    # If no event labels are found, fill in NAs
+    if stim_label == '-9999':
         message = (f"Unable to find stimulus onset label in eeg data.\n"
                    f"Subject {args['subject']} session {args['session']} "
                    f"run {args['run']}\n"
@@ -261,9 +263,21 @@ def _format_gradcpt(mat, gradcpt_headers, args):
 
         return d_eeg, d_fmri
 
+    # If more than one event label is in sync with S255, raise error
+    if stim_label is None:
+        message = (f"Ambiguous event labels in GradCPT.\n"
+                   f"Subject {args['subject']} session {args['session']} "
+                   f"run {args['run']}\n"
+                   f"event_id: {event_id}")
+        raise ValueError(message)
+
+
 
     stim_number = event_id[stim_label]
+    # Assume first stim label occurrance is start of GradCPT
     task_onset_s = events[events[:, 2] == stim_number, :][0][0] / raw.info['sfreq']
+
+    # Make EEG data
     # Assuming gradcpt stimulus onset 20 s after task onset
     stim_onset_s = task_onset_s + 20
     shift = (raw_onsets - stim_onset_s)[0]

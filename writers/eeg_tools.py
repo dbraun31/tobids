@@ -65,7 +65,6 @@ def write_eeg(eeg_files, write_path, make_edf, overwrite, use_mne_bids, progress
 
             # Use mne_bids to write?
             if use_mne_bids:
-                # Bad assumption
                 write_path_mne = _trim_path_to_dir(write_path, 'rawdata')
 
                 outs.append(_make_mne_bids_data(raw,
@@ -104,24 +103,30 @@ def bandaid_es(task_name):
 
 def get_true_event_label(events, event_id):
     # If there's more than one non 255 'Stimulus' marker, take only the one
-    # occuring more than once in the data
+    # occuring more than once in the data and at the same frequency as 255
 
     # Find first item onset
     item_labels = [x for x in event_id.keys() if 'Stimulus' in x and 'S255' not in x]
+    s255 = [x for x in event_id.keys() if 'S255' in x]
 
-    if len(item_labels) == 1:
+    # If no S255 present, assume no event labels
+    if not len(s255):
+        return '-9999'
+    s255 = s255[0]
+
+    # If there's only one event label and it's in sync with label S255
+    if len(item_labels) == 1 and _ensure_s255_sync(events, event_id, item_labels[0], s255):
         return item_labels[0]
+    # If there are no event labels, return '-9999'
     elif not len(item_labels):
-        return None
+        return '-9999'
 
     # If there's more than one event label
-        # keep only the label occuring more than once
-    d = {}
+        # keep only the label occuring in sync with S255
+    out = []
     for label in item_labels:
-        count = len(events[events[:,2] == event_id[label],:])
-        d[label] = count
-
-    out = [x for x in d if d[x] > 1]
+        if _ensure_s255_sync(events, event_id, label, s255):
+            out.append(label)
 
     if len(out) > 1:
         return None
@@ -130,6 +135,16 @@ def get_true_event_label(events, event_id):
 
 
 # --------- INTERNAL FUNCTIONS -----------
+
+def _ensure_s255_sync(events, event_id, label, s255):
+    # Return True if label occurs equally often as s255
+    # False otherwise
+
+    label_numeric = event_id[label]
+    s255_numeric = event_id[s255]
+    label_freq = len(events[events[:,2] == label_numeric, :])
+    s255_freq = len(events[events[:,2] == s255_numeric, :])
+    return s255_freq == label_freq
 
 def _trim_path_to_dir(path, target_dir_name):
     '''
@@ -167,17 +182,12 @@ def _make_mne_bids_data(raw, write_path, subject, session, task, run,
     '''
 
 
+    bids_path = mne_bids.BIDSPath(subject=subject,
+                                  task=task,
+                                  run=run,
+                                  root=write_path)
     if session:
-        bids_path = mne_bids.BIDSPath(subject=subject,
-                                      session=session,
-                                      task=task,
-                                      run=run,
-                                      root=write_path)
-    else:
-        bids_path = mne_bids.BIDSPath(subject=subject,
-                                      task=task,
-                                      run=run,
-                                      root=write_path)
+        bids_path.update(session=session)
 
     write = 0
     if not os.path.exists(bids_path):

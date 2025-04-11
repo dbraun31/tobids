@@ -30,6 +30,7 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     item_order is a string of item labels in order of onset
     Extracts fMRI synched onsets labeled by item
     Overwrites onsets in behav data
+    ** Only deals with ES data **
     '''
 
     # Get item order
@@ -43,20 +44,22 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     # Import eeg
     raw = mne.io.read_raw_brainvision(vhdr_path)
 
-    # Find scan start time
+    # --- FIND SCAN START TIME --- #
     events, event_id = mne.events_from_annotations(raw)
     tr_label = [x for x in event_id.keys() if 'T  1' in x]
 
     if not len(tr_label):
-        raise ValueError(message)
+        scan_start_s = np.nan
+    else:
+        tr_number = event_id[tr_label[0]]
+        scan_start_s = events[events[:, 2] == tr_number, :][0][0] / raw.info['sfreq']
 
-    tr_number = event_id[tr_label[0]]
-    scan_start_s = events[events[:, 2] == tr_number, :][0][0] / raw.info['sfreq']
 
+    # --- FIND EEG START TIME --- #
     item_label = get_true_event_label(events, event_id)
 
     # If cant find a unique item label
-    if item_label is None:
+    if item_label is None or item_label == '-9999':
         raise ValueError(message)
 
     item_number = event_id[item_label]
@@ -81,13 +84,20 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
     for modality in modalities:
         # Make EEG timelocked data
         order = ['onset', 'duration', 'offset', 'trial', 'item', 'RT', 'response']
-        shift = behav['onset_original'][0] - offset[modality]
         t = behav.copy()
-        t['onset'] = t['onset_original'] - shift
+
+        # Control for missing TR markers in EEG data
+        if offset[modality] is np.nan:
+            t['onset'] = np.nan
+            t['offset'] = np.nan
+            t = t.sort_values(by=['trial'])
+        else:
+            shift = behav['onset_original'][0] - offset[modality]
+            t['onset'] = t['onset_original'] - shift
+            t['offset'] = t['onset'] + t['duration']
+            t = t.sort_values(by=['trial', 'onset'])
         t.drop(['onset_original'], axis = 1, inplace=True)
-        t['offset'] = t['onset'] + t['duration']
         t = t[order]
-        t = t.sort_values(by=['trial', 'onset'])
         t = t.reset_index()
         t.drop(['index'], axis=1, inplace=True)
         out[modality] = t
