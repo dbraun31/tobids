@@ -271,9 +271,9 @@ def _format_gradcpt(mat, gradcpt_headers, args):
                    f"event_id: {event_id}")
         raise ValueError(message)
 
-
-
     stim_number = event_id[stim_label]
+
+    # Get task onset in EEG time
     # Assume first stim label occurrance is start of GradCPT
     task_onset_s = events[events[:, 2] == stim_number, :][0][0] / raw.info['sfreq']
 

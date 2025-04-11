@@ -20,6 +20,7 @@ def _reshape_behav(behav):
     d = d.pivot(index=['trial', 'item'], columns='type', values='measurement').reset_index()
     d['duration'] = d['offset'] - d['onset']
     d.rename(columns = {'onset': 'onset_original'}, inplace=True)
+    d.sort_values(by = ['trial', 'onset_original'], inplace=True)
 
     return d
 
@@ -41,21 +42,25 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
                      f"item for subject {args['subject']}, session"
                      f" {args['session']}, run {args['run']}.")
 
+    # Item onset in behavioral time
+    first_item_behav = behav['onset_original'].to_numpy()[0]
+
     # Import eeg
     raw = mne.io.read_raw_brainvision(vhdr_path)
 
-    # --- FIND SCAN START TIME --- #
+    # --- FIND SCAN START IN EEG TIME --- #
     events, event_id = mne.events_from_annotations(raw)
     tr_label = [x for x in event_id.keys() if 'T  1' in x]
 
     if not len(tr_label):
-        scan_start_s = np.nan
+        first_item_fmri = np.nan
+        scan_start_eeg = np.nan
     else:
         tr_number = event_id[tr_label[0]]
-        scan_start_s = events[events[:, 2] == tr_number, :][0][0] / raw.info['sfreq']
+        scan_start_eeg = events[events[:, 2] == tr_number, :][0][0] / raw.info['sfreq']
 
 
-    # --- FIND EEG START TIME --- #
+    # --- FIND ITEM START IN EEG TIME --- #
     item_label = get_true_event_label(events, event_id)
 
     # If cant find a unique item label
@@ -75,10 +80,15 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
         raise ValueError(f'Problem inferring EEG timestamp for first ES '
                          f"item for subject {args['subject']}, session"
                          f" {args['session']}, run {args['run']}.")
-    first_item_s = first_stims[first_item_idx]
+    first_item_eeg = first_stims[first_item_idx]
+
+
+    # --- FIND ITEM START IN FMRI TIME --- #
+    first_item_fmri = first_item_eeg - scan_start_eeg
+
 
     out = {}
-    offset = {'eeg': first_item_s, 'fmri': scan_start_s}
+    item_onsets = {'eeg': first_item_eeg, 'fmri': first_item_fmri}
     modalities = ['eeg', 'fmri']
 
     for modality in modalities:
@@ -87,12 +97,12 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
         t = behav.copy()
 
         # Control for missing TR markers in EEG data
-        if offset[modality] is np.nan:
+        if item_onsets[modality] is np.nan:
             t['onset'] = np.nan
             t['offset'] = np.nan
             t = t.sort_values(by=['trial'])
         else:
-            shift = behav['onset_original'][0] - offset[modality]
+            shift = first_item_behav - item_onsets[modality]
             t['onset'] = t['onset_original'] - shift
             t['offset'] = t['onset'] + t['duration']
             t = t.sort_values(by=['trial', 'onset'])
