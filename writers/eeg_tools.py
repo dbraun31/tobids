@@ -111,15 +111,22 @@ def get_true_event_label(events, event_id):
 
     # If no S255 present, assume no event labels
     if not len(s255):
-        return '-9999'
+        return None
     s255 = s255[0]
 
     # If there's only one event label and it's in sync with label S255
-    if len(item_labels) == 1 and _ensure_s255_sync(events, event_id, item_labels[0], s255):
+    s255_sync = _ensure_s255_sync(events, event_id, item_labels[0], s255)
+    if len(item_labels) == 1 and s255_sync:
+        label = item_labels[0]
+        # If there's not only two labels, return None
+        label_freq = _get_label_frequency(events, event_id, label)
+        if label_freq != 2:
+            return None
         return item_labels[0]
-    # If there are no event labels, return '-9999'
+    # If there are no event labels, return None
     elif not len(item_labels):
-        return '-9999'
+        return None
+
 
     # If there's more than one event label
         # keep only the label occuring in sync with S255
@@ -131,10 +138,22 @@ def get_true_event_label(events, event_id):
     if len(out) > 1:
         return None
 
+    # Ensure the label only occurs twice
+    label_freq = _get_label_frequency(events, event_id, out[0])
+    if label_freq != 2:
+        return None
     return out[0]
 
 
 # --------- INTERNAL FUNCTIONS -----------
+
+def _get_label_frequency(events, event_id, label):
+    # Return an int conut of how many times a label occurs in the data
+
+    label_numeric = event_id[label]
+    label_freq = len(events[events[:,2] == label_numeric, :])
+    return label_freq
+
 
 def _ensure_s255_sync(events, event_id, label, s255):
     # Return True if label occurs equally often as s255
