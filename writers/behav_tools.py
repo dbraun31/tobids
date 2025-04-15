@@ -223,17 +223,7 @@ def _format_gradcpt(mat, gradcpt_headers, args):
     Returns out pd df with onset and duration locked to fmri start time
     '''
 
-    # Make fmri data
-    raw_onsets = mat['data'][:, 8]
-    starttime = mat['starttime']
-    onsets = (raw_onsets - starttime)[0]
-    durations = np.diff(onsets)
-    durations = np.append(durations, np.NaN)
-    d_fmri = pd.DataFrame(mat['response'], columns=gradcpt_headers)
-    d_fmri.insert(0, 'onset', onsets)
-    d_fmri.insert(1, 'duration', durations)
-
-    # Make eeg data
+    # Get eeg data
     eeg_path = BIDSPath(subject = args['subject'],
                         session = args['session'],
                         run = args['run'],
@@ -245,6 +235,7 @@ def _format_gradcpt(mat, gradcpt_headers, args):
 
     raw = mne.io.read_raw_brainvision(eeg_path.fpath)
     events, event_id = mne.events_from_annotations(raw)
+    raw_onsets = mat['data'][:, 8]
 
     # Extract event onset label from EEG data
     stim_label = get_true_event_label(events, event_id)
@@ -261,27 +252,79 @@ def _format_gradcpt(mat, gradcpt_headers, args):
         d_eeg.insert(0, 'onset', np.nan)
         d_eeg.insert(1, 'duration', np.nan)
 
+        # Use starttime to compute fmri data
+        d_fmri = _starttime_resort(mat, gradcpt_headers)
+
         return d_eeg, d_fmri
 
-    stim_number = event_id[stim_label]
 
-    # Get task onset in EEG time
-    # Assume first stim label occurrance is start of GradCPT
-    task_onset_s = events[events[:, 2] == stim_number, :][0][0] / raw.info['sfreq']
+    d_eeg, gcpt_start_e = _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets)
+    d_fmri = _format_gradcpt_fmri(stim_label, events, event_id, raw, raw_onsets)
 
-    # Make EEG data
-    # Assuming gradcpt stimulus onset 20 s after task onset
-    stim_onset_s = task_onset_s + 20
-    shift = (raw_onsets - stim_onset_s)[0]
+    return d_eeg, d_fmri
+
+def _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets):
+    '''
+    Format gradcpt data timelocked to EEG start
+    '''
+
+    # Get GradCPT onset in EEG time
+    gcpt_duration_b = raw_onsets[-1] - raw_onsets[0]
+    stim_numeric = event_id[stim_label]
+    gcpt_end_e = events[events[:,2]==stim_numeric,:][:,0][1] / raw.info['sfreq']
+    gcpt_start_e = gcpt_end_e - gcpt_duration_b
+
+    return _make_df(raw_onsets, gcpt_start_e), gcpt_start_e
+
+def _format_gradcpt_fmri(stim_label, events, event_id, raw, raw_onsets):
+    '''
+    Format gradcpt data timelocked to fMRI start
+    *Not* using starttime var
+    Using EEG markers
+    '''
+    # Get gradcpt start in fMRI time
+    fmri_onset_e = events[events[:,2]==stim_numeric,:][:,0][0] / raw.info['sfreq']
+    gcpt_start_f = gcpt_start_e - fmri_onset_e
+
+
+    return _make_df(raw_onsets, gcpt_start_f)
+
+
+def _make_df(raw_onsets, task_start_m):
+    '''
+    Compute a DF for EEG or fMRI relative to that clock
+    task_start_m is the start of the task in the relevant data modality
+    '''
+    # Compute shift and make df
+    shift =  raw_onsets[0] - task_start_m
     onsets = raw_onsets - shift
     durations = np.diff(onsets)
     durations = np.append(durations, np.NaN)
-    d_eeg = pd.DataFrame(mat['response'], columns=gradcpt_headers)
-    d_eeg.insert(0, 'onset', onsets)
-    d_eeg.insert(1, 'duration', durations)
+    d = pd.DataFrame(mat['response'], columns=gradcpt_headers)
+    d.insert(0, 'onset', onsets)
+    d.insert(1, 'duration', durations)
+
+    return d
 
 
-    return d_eeg, d_fmri
+def _starttime_resort(mat, gradcpt_headers):
+    '''
+    If no reliable EEG events can be found, fill in the GradCPT fMRI timing
+    using the 'starttime' var in the matlab data
+    '''
+
+    # Make fmri data
+    raw_onsets = mat['data'][:, 8]
+    starttime = mat['starttime']
+    onsets = (raw_onsets - starttime)[0]
+    durations = np.diff(onsets)
+    durations = np.append(durations, np.NaN)
+    d_fmri = pd.DataFrame(mat['response'], columns=gradcpt_headers)
+    d_fmri.insert(0, 'onset', onsets)
+    d_fmri.insert(1, 'duration', durations)
+
+    return d_fmri
+
 
 
 def _get_stim_label(event_id):
