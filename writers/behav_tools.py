@@ -76,7 +76,7 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
                         root=dest_path,
                         check=False)
     # For logging
-    ins = []	
+    ins = []    
     outs = []
 
     # Update subject and session information
@@ -114,9 +114,9 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
             if not os.path.exists(out_bids.fpath.parent):
                 os.makedirs(out_bids.fpath.parent)
 
-            if overwrite or not os.path.exists(out_bids.fpath):
-                # Write tsv
-                d.to_csv(out_bids.fpath, index=False, sep='\t')
+            # Will always overwrite behav data
+            # Write tsv
+            d.to_csv(out_bids.fpath, index=False, sep='\t')
 
             # Logging
             ins.append(gradcpt)
@@ -124,17 +124,15 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
 
             # Write json
             out_bids.update(extension='.json')
-            if overwrite or not os.path.exists(out_bids.fpath):
-                with open(out_bids.fpath, 'w') as file:
-                    json.dump(gradcpt_json, file, indent=4)
-                file.close()
+            with open(out_bids.fpath, 'w') as file:
+                json.dump(gradcpt_json, file, indent=4)
+            file.close()
 
     # ESs
     # Assuming CSV or ptbp
     # Structure: (data, 'csv' or 'ptbp')
     ESs = _sort_by_run(ESs)
     for run, es in enumerate(ESs, start=1):
-
         run = str(run).zfill(3)
         args['run'] = run
 
@@ -163,8 +161,7 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
                 os.makedirs(out_bids.fpath.parent)
 
             # Write tsv
-            if overwrite or not os.path.exists(out_bids.fpath):
-                d_hold[datatype].to_csv(out_bids.fpath, index=False, sep='\t')
+            d_hold[datatype].to_csv(out_bids.fpath, index=False, sep='\t')
 
             # Logging
             ins.append(es)
@@ -172,10 +169,9 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
 
             # Write json
             out_bids.extension = '.json'
-            if overwrite or not os.path.exists(out_bids.fpath):
-                with open(out_bids.fpath, 'w') as file:
-                    json.dump(es_json, file, indent=4)
-                file.close()
+            with open(out_bids.fpath, 'w') as file:
+                json.dump(es_json, file, indent=4)
+            file.close()
 
 
     # Log writing
@@ -238,7 +234,7 @@ def _format_gradcpt(mat, gradcpt_headers, args):
     raw_onsets = mat['data'][:, 8]
 
     # Extract event onset label from EEG data
-    stim_label = get_true_event_label(events, event_id)
+    stim_label = get_true_event_label(events, event_id, task='GradCPT')
 
     # If no event labels are found, fill in NAs
     if stim_label is None:
@@ -258,12 +254,12 @@ def _format_gradcpt(mat, gradcpt_headers, args):
         return d_eeg, d_fmri
 
 
-    d_eeg, gcpt_start_e = _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets)
-    d_fmri = _format_gradcpt_fmri(stim_label, events, event_id, raw, raw_onsets)
+    d_eeg, gcpt_start_e = _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets, mat)
+    d_fmri = _format_gradcpt_fmri(stim_label, events, event_id, raw, raw_onsets, gcpt_start_e, mat)
 
     return d_eeg, d_fmri
 
-def _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets):
+def _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets, mat):
     '''
     Format gradcpt data timelocked to EEG start
     '''
@@ -274,23 +270,24 @@ def _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets):
     gcpt_end_e = events[events[:,2]==stim_numeric,:][:,0][1] / raw.info['sfreq']
     gcpt_start_e = gcpt_end_e - gcpt_duration_b
 
-    return _make_df(raw_onsets, gcpt_start_e), gcpt_start_e
+    return _make_df(raw_onsets, gcpt_start_e, mat), gcpt_start_e
 
-def _format_gradcpt_fmri(stim_label, events, event_id, raw, raw_onsets):
+def _format_gradcpt_fmri(stim_label, events, event_id, raw, raw_onsets, gcpt_start_e, mat):
     '''
     Format gradcpt data timelocked to fMRI start
     *Not* using starttime var
     Using EEG markers
     '''
     # Get gradcpt start in fMRI time
+    stim_numeric = event_id[stim_label]
     fmri_onset_e = events[events[:,2]==stim_numeric,:][:,0][0] / raw.info['sfreq']
     gcpt_start_f = gcpt_start_e - fmri_onset_e
 
 
-    return _make_df(raw_onsets, gcpt_start_f)
+    return _make_df(raw_onsets, gcpt_start_f, mat)
 
 
-def _make_df(raw_onsets, task_start_m):
+def _make_df(raw_onsets, task_start_m, mat):
     '''
     Compute a DF for EEG or fMRI relative to that clock
     task_start_m is the start of the task in the relevant data modality

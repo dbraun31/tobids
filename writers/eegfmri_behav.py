@@ -61,10 +61,11 @@ def get_eegfmri_behav(vhdr_path, behav_path, args):
 
 
     # --- FIND ITEM START IN EEG TIME --- #
-    item_label = get_true_event_label(events, event_id)
+    item_label = get_true_event_label(events, event_id, task='ExperienceSampling')
 
     # If cant find a unique item label
     if item_label is None or item_label == '-9999':
+        print(f'Event ID: {event_id}')
         raise ValueError(message)
 
     item_number = event_id[item_label]

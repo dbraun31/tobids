@@ -101,7 +101,7 @@ def bandaid_es(task_name):
         return 'ExperienceSampling'
     return task_name
 
-def get_true_event_label(events, event_id):
+def get_true_event_label(events, event_id, task):
     # If there's more than one non 255 'Stimulus' marker, take only the one
     # occuring more than once in the data and at the same frequency as 255
 
@@ -120,7 +120,7 @@ def get_true_event_label(events, event_id):
         label = item_labels[0]
         # If there's not only two labels, return None
         label_freq = _get_label_frequency(events, event_id, label)
-        if label_freq != 2:
+        if label_freq != 2 and task=='GradCPT':
             return None
         return item_labels[0]
     # If there are no event labels, return None
@@ -140,7 +140,7 @@ def get_true_event_label(events, event_id):
 
     # Ensure the label only occurs twice
     label_freq = _get_label_frequency(events, event_id, out[0])
-    if label_freq != 2:
+    if label_freq != 2 and task == 'GradCPT':
         return None
     return out[0]
 
