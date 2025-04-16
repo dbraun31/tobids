@@ -1,6 +1,7 @@
 import sys 
 import os
 import json
+from glob import glob
 import shutil
 from pathlib import Path
 from pyedflib import highlevel
@@ -11,6 +12,7 @@ from helpers.modality_specific import (
 import mne
 import mne_bids
 from helpers.metadata import make_write_log
+from mne_bids import BIDSPath
 
 
 
@@ -143,6 +145,30 @@ def get_true_event_label(events, event_id, task):
     if label_freq != 2 and task == 'GradCPT':
         return None
     return out[0]
+
+
+def delete_eeg_events(subject, session, write_path):
+    '''
+    Delete EEG data with "events" suffix
+    Useful for getting rid of the default events that come from mne-bids
+    For tasks ExperienceSampling and GradCPT
+    '''
+
+    write_path = _trim_path_to_dir(write_path, 'rawdata')
+    path = BIDSPath(subject=subject,
+                    session=session,
+                    task='GradCPT',
+                    suffix='events',
+                    extension='.tsv',
+                    datatype='eeg',
+                    root=write_path)
+
+    parent = path.fpath.parent
+
+    events = glob(str(parent / Path('*events*')))
+
+    for event in events:
+        os.remove(event)
 
 
 # --------- INTERNAL FUNCTIONS -----------

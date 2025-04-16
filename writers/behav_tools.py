@@ -58,8 +58,19 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
     and modalities
     '''
 
+    # Find all existing *_events in EEG data and delete
+    path = BIDSPath(subject = subject,
+                    session = session,
+                    datatype = 'eeg',
+                    suffix = 'events',
+                    extension = '.tsv',
+                    root = dest_path / Path('rawdata'))
+    events = glob(str(path.fpath.parent / Path('*events*')))
+    for event in events:
+        os.remove(event)
 
-    # IO
+
+   # IO
     ptbps = glob(str(seek_path / Path('**/ptbP.mat')), recursive=True)
     ptbps = [(Path(x), 'ptbp') for x in ptbps]
     ESs = glob(str(seek_path / Path('**/*.csv')), recursive=True)
@@ -217,6 +228,8 @@ def _format_gradcpt(mat, gradcpt_headers, args):
     '''
     Takes in the mat data
     Returns out pd df with onset and duration locked to fmri start time
+
+    Much of this is now so incredibly specific to the EEG-fMRI experiment
     '''
 
     # Get eeg data
@@ -265,7 +278,9 @@ def _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets, mat):
     '''
 
     # Get GradCPT onset in EEG time
-    gcpt_duration_b = raw_onsets[-1] - raw_onsets[0]
+    avg_duration = np.diff(raw_onsets).mean()
+    gcpt_end_b = raw_onsets[-1] + avg_duration # Find last trial *offset*
+    gcpt_duration_b = gcpt_end_b - raw_onsets[0]
     stim_numeric = event_id[stim_label]
     gcpt_end_e = events[events[:,2]==stim_numeric,:][:,0][1] / raw.info['sfreq']
     gcpt_start_e = gcpt_end_e - gcpt_duration_b
@@ -313,7 +328,7 @@ def _starttime_resort(mat, gradcpt_headers):
     # Make fmri data
     raw_onsets = mat['data'][:, 8]
     starttime = mat['starttime']
-    onsets = (raw_onsets - starttime)[0]
+    onsets = (raw_onsets - starttime)[0] + 20 # Add 20 s constant
     durations = np.diff(onsets)
     durations = np.append(durations, np.NaN)
     d_fmri = pd.DataFrame(mat['response'], columns=gradcpt_headers)

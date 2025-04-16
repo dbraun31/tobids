@@ -24,7 +24,10 @@ from helpers.basic_parsing import (
         configure_progress_bar,
         get_overwrite
 )
-from writers.eeg_tools import write_eeg
+from writers.eeg_tools import (
+        write_eeg,
+        delete_eeg_events
+)
 from helpers.mne_bids_mods import _write_dig_bids
 from writers.fmri_tools import (write_fmri, get_fmri_root)
 from helpers.metadata import make_metadata
@@ -118,6 +121,8 @@ if __name__ == '__main__':
                           overwrite,
                           use_mne_bids,
                           progress_bar)
+                # Clear out mne-bids created events
+                delete_eeg_events(subject['number'], session, write_path)
 
             if fmri:
                 print('Writing fMRI data')
