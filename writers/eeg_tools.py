@@ -156,12 +156,14 @@ def delete_eeg_events(subject, session, write_path):
 
     write_path = _trim_path_to_dir(write_path, 'rawdata')
     path = BIDSPath(subject=subject,
-                    session=session,
                     task='GradCPT',
                     suffix='events',
                     extension='.tsv',
                     datatype='eeg',
                     root=write_path)
+
+    if session != '-999':
+        path.update(session=session)
 
     parent = path.fpath.parent
 
