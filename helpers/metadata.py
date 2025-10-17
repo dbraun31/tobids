@@ -13,7 +13,7 @@ import json
 def make_write_log(ins, outs, modality):
     first_dir = outs[0].parts[0]
     write_log = {}
-    name = '{}/conversion_log_{}'.format(first_dir, modality)
+    name = f'{first_dir}/conversion_log_{modality}'
     if os.path.exists(name + '.pkl'):
         with open(name + '.pkl', 'rb') as file:
             write_log = pickle.load(file) 

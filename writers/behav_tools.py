@@ -53,25 +53,26 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
     5. There will be either ptbP.mat or non *_city_mtn_*.csv experience
         sampling data, not both
 
-    ** NOTE TO SELF **
-    really should revisit this and make sure it generalizes across tasks
-    and modalities
+    If EEG data is present, this function will do some gnarlie processing
+    to align clocks for EEG and fMRI due to a recording failure specific to
+    EEG-fMRI...
     '''
 
     # Find all existing *_events in EEG data and delete
     path = BIDSPath(subject = subject,
-                    session = session,
                     datatype = 'eeg',
                     suffix = 'events',
                     extension = '.tsv',
                     root = dest_path / Path('rawdata'))
+    if session != '-999':
+        path.session = session
     events = glob(str(path.fpath.parent / Path('*events*')))
     for event in events:
         os.remove(event)
 
 
    # IO
-    ptbps = glob(str(seek_path / Path('**/ptbP.mat')), recursive=True)
+    ptbps = glob(str(seek_path / Path('**/*ptbP.mat')), recursive=True)
     ptbps = [(Path(x), 'ptbp') for x in ptbps]
     ESs = glob(str(seek_path / Path('**/*.csv')), recursive=True)
     ESs = [x for x in ESs if '_city_mnt_' not in x]
@@ -103,6 +104,7 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
             'session': session,
             'dest_path': dest_path}
 
+    _validate_not_identical(gradcpts + ESs)
 
     # GradCPT
     gradcpts = _sort_by_run(gradcpts)
@@ -111,26 +113,36 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
         
         args['run'] = str(run).zfill(3)
         mat = loadmat(gradcpt[0])
-        d_eeg, d_fmri = _format_gradcpt(mat, gradcpt_headers, args)
+        d_eeg, d_fmri = _format_gradcpt(mat, gradcpt_headers, args, eeg)
 
         # Out dir
         out_bids.task = 'GradCPT'
         out_bids.run = str(run).zfill(3)
         datatypes = ['eeg', 'func']
+
+        # Iterate over EEG/fMRI modalities
+        # (Modality here just refers to which clock the behavioral data is
+        # synced to)
         for d, datatype in zip([d_eeg, d_fmri], datatypes):
             
+            if d is None:
+                continue
+
             out_bids.datatype = datatype
             out_bids.update(extension = '.tsv')
 
             if not os.path.exists(out_bids.fpath.parent):
                 os.makedirs(out_bids.fpath.parent)
 
-            # Will always overwrite behav data
+            # Skip if exists and overwrite=False
+            if os.path.exists(out_bids.fpath) and not overwrite:
+                continue
+
             # Write tsv
             d.to_csv(out_bids.fpath, index=False, sep='\t')
 
             # Logging
-            ins.append(gradcpt)
+            ins.append(gradcpt[0])
             outs.append(out_bids.fpath)
 
             # Write json
@@ -150,9 +162,10 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
         # Convert path to data frame
         if es[1] == 'ptbp':
             # Assuming this is fMRI only data
-            d = _format_ptbp(es[0])
+            d = _format_ptbp(es[0], args)
             d_hold = {'func': d}
         elif es[1] == 'csv':
+            # Assuming this is EEG-fMRI ES data
             # Should add some logic down in _format_es somewhere to check
             # whether it's EEG, fMRI, or both
             d_eeg, d_fmri = _format_es(es[0], args, dest_path)
@@ -168,6 +181,9 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
             out_bids.extension = '.tsv'
             out_bids.datatype = datatype
 
+            if os.path.exists(out_bids.fpath) and not overwrite:
+                continue
+
             if not os.path.exists(out_bids.fpath.parent):
                 os.makedirs(out_bids.fpath.parent)
 
@@ -175,7 +191,7 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
             d_hold[datatype].to_csv(out_bids.fpath, index=False, sep='\t')
 
             # Logging
-            ins.append(es)
+            ins.append(es[0])
             outs.append(out_bids.fpath)
 
             # Write json
@@ -186,7 +202,35 @@ def write_behav(subject, session, seek_path, dest_path, overwrite, eeg, fmri):
 
 
     # Log writing
-    make_write_log(ins, outs, 'behav')
+    if all([ins, outs]):
+        make_write_log(ins, outs, 'behav')
+
+
+def _validate_not_identical(paths):
+    '''
+    Validate that the filenames for each task are distince
+    paths is a list of (Path, 'task')
+    '''
+
+    ref = {}
+
+    # Loop over paths
+    for path in paths:
+        # If task not in dict, add it
+        if path[1] not in ref:
+            ref[path[1]] = [path[0].name]
+        # Otherwise
+        else:
+            # See if the path is already in the list
+            if path[0].name not in ref[path[1]]:
+                # Add it if not
+                ref[path[1]].append(path[0].name)
+
+            # If it is, it's duplicate. Throw error.
+            else:
+                raise ValueError('Behavioral file names must be distinct\n'
+                                 f'Duplicate: {path[0].name}')
+
 
 def _extract_run(path):
     '''
@@ -224,53 +268,76 @@ def _sort_by_run(paths):
 
     return paths
 
-def _format_gradcpt(mat, gradcpt_headers, args):
+def _format_gradcpt(mat, gradcpt_headers, args, eeg):
     '''
     Takes in the mat data
     Returns out pd df with onset and duration locked to fmri start time
 
-    Much of this is now so incredibly specific to the EEG-fMRI experiment
+    eeg=True means there's EEG data
+    and the protocol for eeg=True is incredibly specific to the EEG-fMRI
+    experiment, where clock recording got messed up, and I'm jumping
+    through crazy hoops to correct it. My condolences to whatever poor
+    soul is trying to parse what's happening below.
     '''
 
-    # Get eeg data
-    eeg_path = BIDSPath(subject = args['subject'],
-                        session = args['session'],
-                        run = args['run'],
-                        task = 'GradCPT',
-                        suffix = 'eeg',
-                        datatype = 'eeg',
-                        extension = '.vhdr',
-                        root = args['dest_path'])
+    # If dealing with rt-fmri
+    if not eeg:
+        d_fmri = pd.DataFrame(mat['response'], columns = gradcpt_headers)
+        starttime = mat['starttime'][0][0]
+        onsets = d_fmri['timestamp'] - starttime
+        # Pad durations with the first onset
+        durations = np.concatenate([np.array([onsets[0]]), np.diff(onsets)])
+        d_fmri.insert(0, 'onset', onsets)
+        d_fmri.insert(1, 'duration', durations)
 
-    raw = mne.io.read_raw_brainvision(eeg_path.fpath)
-    events, event_id = mne.events_from_annotations(raw)
-    raw_onsets = mat['data'][:, 8]
+        return None, d_fmri
 
-    # Extract event onset label from EEG data
-    stim_label = get_true_event_label(events, event_id, task='GradCPT')
+    # If dealing with eeg-fmri data
+    if eeg:
+        # We need to do crazy clock syncing because I think something
+        # didn't record correctly in the matlab file
 
-    # If no event labels are found, fill in NAs
-    if stim_label is None:
-        message = (f"Ambiguous event labels in GradCPT.\n"
-                   f"Subject {args['subject']} session {args['session']} "
-                   f"run {args['run']}\n"
-                   f"event_id: {event_id}"
-                   "\nFilling in NAs")
-        print('\n', message, '\n')
-        d_eeg = pd.DataFrame(mat['response'], columns=gradcpt_headers)
-        d_eeg.insert(0, 'onset', np.nan)
-        d_eeg.insert(1, 'duration', np.nan)
+        # Get eeg data
+        eeg_path = BIDSPath(subject = args['subject'],
+                            run = args['run'],
+                            task = 'GradCPT',
+                            suffix = 'eeg',
+                            datatype = 'eeg',
+                            extension = '.vhdr',
+                            root = args['dest_path'])
 
-        # Use starttime to compute fmri data
-        d_fmri = _starttime_resort(mat, gradcpt_headers)
+        if args['session'] != '-999':
+            eeg_path.session = args['session']
+
+        raw = mne.io.read_raw_brainvision(eeg_path.fpath)
+        events, event_id = mne.events_from_annotations(raw)
+        raw_onsets = mat['data'][:, 8]
+
+        # Extract event onset label from EEG data
+        stim_label = get_true_event_label(events, event_id, task='GradCPT')
+
+        # If no event labels are found, fill in NAs
+        if stim_label is None:
+            message = (f"Ambiguous event labels in GradCPT.\n"
+                       f"Subject {args['subject']} session {args['session']} "
+                       f"run {args['run']}\n"
+                       f"event_id: {event_id}"
+                       "\nFilling in NAs")
+            print('\n', message, '\n')
+            d_eeg = pd.DataFrame(mat['response'], columns=gradcpt_headers)
+            d_eeg.insert(0, 'onset', np.nan)
+            d_eeg.insert(1, 'duration', np.nan)
+
+            # Use starttime to compute fmri data
+            d_fmri = _starttime_resort(mat, gradcpt_headers)
+
+            return d_eeg, d_fmri
+
+
+        d_eeg, gcpt_start_e = _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets, mat)
+        d_fmri = _format_gradcpt_fmri(stim_label, events, event_id, raw, raw_onsets, gcpt_start_e, mat)
 
         return d_eeg, d_fmri
-
-
-    d_eeg, gcpt_start_e = _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets, mat)
-    d_fmri = _format_gradcpt_fmri(stim_label, events, event_id, raw, raw_onsets, gcpt_start_e, mat)
-
-    return d_eeg, d_fmri
 
 def _format_gradcpt_eeg(stim_label, events, event_id, raw, raw_onsets, mat):
     '''
@@ -351,7 +418,7 @@ def _get_stim_label(event_id):
             return label
     return None
 
-def _format_ptbp(ptbp):
+def _format_ptbp(ptbp, args):
     '''
     Takes in ptbp path as Path
     Returns formatted ES data locked to scan start
@@ -360,9 +427,11 @@ def _format_ptbp(ptbp):
     trigger_codes =  {1: 'brain', 2: 'timeout'}
 
     # Get triggers
-    dunderp = glob(str(Path(ptbp.parent) / Path('*_P.mat')))[0]
-    dunderp_mat = loadmat(dunderp)
-    triggers_full = dunderp_mat['eventType'][0]  
+    sub_twopad = str(int(args['subject'])).zfill(2) 
+    run_zeropad = str(int(args['run']))
+    underp_path = ptbp.parent / Path(f'../P/sub-{sub_twopad}_{run_zeropad}_P.mat')
+    underp_mat = loadmat(str(underp_path))
+    triggers_full = underp_mat['eventType'][0]  
     trigger_idxs = np.where(np.isin(triggers_full, [1, 2]))[0]
     trigger_onsets = (trigger_idxs + 1) * 2
     triggers = triggers_full[trigger_idxs]
